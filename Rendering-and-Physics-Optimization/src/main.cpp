@@ -25,7 +25,7 @@ int main()
         ShaderLoader shader = ShaderLoader::fromFiles("shaders/ballShader.vert", "shaders/ballShader.frag");
 
         //Spawn spheres of count N.
-        const int N = 500;
+        const int N = 5;
         std::vector<Sphere> spheres;
         spheres.reserve(N);
 
