@@ -22,8 +22,9 @@
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{45ff8935-40dd-4861-87b3-adf1b70892c9}</ProjectGuid>
-    <RootNamespace>CPUOptimization</RootNamespace>
+    <RootNamespace>Rendering-and-Physics-Optimization</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>Rendering-and-Physics-Optimization</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -155,16 +156,26 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Camera.cpp" />
+    <ClCompile Include="src\Sphere.cpp" />
+    <ClCompile Include="src\Box.cpp" />
+    <ClCompile Include="src\OpenGLWindow.cpp" />
+    <ClCompile Include="src\ShaderLoader.cpp" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Camera.h" />
+    <ClInclude Include="src\Sphere.h" />
     <ClInclude Include="external\include\glad\glad\glad.h" />
     <ClInclude Include="external\include\glad\include\glad\glad.h" />
     <ClInclude Include="external\include\glad\include\KHR\khrplatform.h" />
     <ClInclude Include="external\include\glad\KHR\khrplatform.h" />
     <ClInclude Include="external\include\glfw\glfw3.h" />
     <ClInclude Include="external\include\glfw\glfw3native.h" />
+    <ClInclude Include="src\Box.h" />
+    <ClInclude Include="src\OpenGLWindow.h" />
+    <ClInclude Include="src\ShaderLoader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
