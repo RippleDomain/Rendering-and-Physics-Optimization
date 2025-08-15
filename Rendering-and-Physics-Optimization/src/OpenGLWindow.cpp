@@ -1,5 +1,5 @@
 #include <glad/glad.h>  
-#include "OpenGLWindow.h"    // GL loader – if you decide to not use GLAD, swap this out.
+#include "OpenGLWindow.h"
 #include <stdexcept>
 #include <string>
 

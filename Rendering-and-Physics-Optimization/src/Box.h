@@ -19,7 +19,7 @@ public:
     void resolveCollision(Sphere& s, float restitution) const;
 
 private:
-    GLuint m_vao{ 0 }, m_vbo{ 0 }, m_ebo{ 0 };
-    glm::vec3 m_min{ 0.0f, 0.0f, 0.0f };
-    glm::vec3 m_max{ 0.0f, 0.0f, 0.0f };
+    GLuint vertexArray{ 0 }, vertexBuffer{ 0 }, elementBuffer{ 0 };
+    glm::vec3 min{ 0.0f, 0.0f, 0.0f };
+    glm::vec3 max{ 0.0f, 0.0f, 0.0f };
 };

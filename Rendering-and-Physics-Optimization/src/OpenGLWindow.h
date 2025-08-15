@@ -26,7 +26,7 @@ public:
     void pollEvents() const;
     void swapBuffers() const;
 
-    //Current framebuffer size in pixels (accounts for HiDPI).
+    //Current framebuffer size in pixels.
     void getFramebufferSize(int& w, int& h) const;
 
     double time() const;

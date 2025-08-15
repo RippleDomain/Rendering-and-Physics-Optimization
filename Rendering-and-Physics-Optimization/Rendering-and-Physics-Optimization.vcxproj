@@ -163,6 +163,7 @@
     <ClCompile Include="src\ShaderLoader.cpp" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\SphereInstance.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Camera.h" />
@@ -176,6 +177,7 @@
     <ClInclude Include="src\Box.h" />
     <ClInclude Include="src\OpenGLWindow.h" />
     <ClInclude Include="src\ShaderLoader.h" />
+    <ClInclude Include="src\SphereInstance.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

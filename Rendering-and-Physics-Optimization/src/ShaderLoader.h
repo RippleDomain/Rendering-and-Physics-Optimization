@@ -18,15 +18,16 @@ public:
     static ShaderLoader fromFiles(const std::string& vsPath, const std::string& fsPath);
 
     void use() const;
-    GLuint id() const { return m_program; }
+    GLuint getID() const { return programID; }
 
     void setMat4(const char* name, const glm::mat4& m) const;
     void setVec3(const char* name, const glm::vec3& v) const;
+	void setFloat(const char* name, float value) const;
 
 private:
-    explicit ShaderLoader(GLuint program) : m_program(program) {}
-    static GLuint compile(GLenum type, const std::string& src, const char* stageName);
-    static GLuint link(GLuint vs, GLuint fs);
+    explicit ShaderLoader(GLuint program) : programID(program) {}
+    static GLuint compile(GLenum type, const std::string& source, const char* stageName);
+    static GLuint link(GLuint vertexShader, GLuint fragmentShader);
 
-    GLuint m_program{ 0 };
+    GLuint programID{ 0 };
 };

@@ -19,34 +19,32 @@ public:
 
     void draw() const;
 
-    const glm::vec3& getPosition() const { return m_position; }
-    float getScale() const { return m_scale; }
-    const glm::vec3& getColor() const { return m_color; }
+    const glm::vec3& getPosition() const { return position; }
+    float getScale() const { return scale; }
+    const glm::vec3& getColor() const { return color; }
+    const glm::vec3& getVelocity() const { return velocity; }
+    float getMass() const { return mass; }
 
-    void setPosition(const glm::vec3& p) { m_position = p; }
-    void setScale(float s) { m_scale = s; m_mass = m_scale * m_scale * m_scale; }
-
-    const glm::vec3& getVelocity() const { return m_velocity; }
-    void setVelocity(const glm::vec3& v) { m_velocity = v; }
-    float getMass() const { return m_mass; }
+    void setPosition(const glm::vec3& p) { position = p; }
+    void setScale(float s) { scale = s; mass = scale * scale * scale; }
+    void setVelocity(const glm::vec3& v) { velocity = v; }
 
     void applyGravity(const glm::vec3& acceleration, float dt);
     void collide(Sphere& other, float restitution);
 
-    glm::mat4 modelMatrix(float timeSeconds) const;
+    glm::mat4 modelMatrix(float dt) const;
 
 private:
     void build(unsigned XSegments, unsigned YSegments);
 
-    GLuint m_vao{ 0 };
-    GLuint m_vbo{ 0 };
-    GLuint m_ebo{ 0 };
-    GLsizei m_indexCount{ 0 };
+    GLuint vertexArray{ 0 };
+    GLuint vertexBuffer{ 0 };
+    GLuint elementBuffer{ 0 };
+    GLsizei indexCount{ 0 };
 
-    glm::vec3  m_position{ 0.0f, 0.0f, 0.0f };
-    float      m_scale{ 0.25f };
-    glm::vec3  m_color{ 1.0f, 1.0f, 1.0f }; //Randomized in the constructor.
-
-    glm::vec3  m_velocity{ 0.0f, 0.0f, 0.0f };
-    float      m_mass{ 1.0f };
+    glm::vec3  position{ 0.0f, 0.0f, 0.0f };
+    float      scale{ 0.25f };
+    glm::vec3  color{ 1.0f, 1.0f, 1.0f }; //Randomized in the constructor.
+    glm::vec3  velocity{ 0.0f, 0.0f, 0.0f };
+    float      mass{ 1.0f };
 };

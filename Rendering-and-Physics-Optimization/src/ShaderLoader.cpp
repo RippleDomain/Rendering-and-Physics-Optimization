@@ -18,22 +18,22 @@ static std::string readTextFile(const std::string& path)
 
 ShaderLoader::~ShaderLoader() 
 {
-    if (m_program) glDeleteProgram(m_program);
+    if (programID) glDeleteProgram(programID);
 }
 
 ShaderLoader::ShaderLoader(ShaderLoader&& other) noexcept 
 {
-    m_program = other.m_program;
-    other.m_program = 0;
+    programID = other.programID;
+    other.programID = 0;
 }
 
 ShaderLoader& ShaderLoader::operator=(ShaderLoader&& other) noexcept 
 {
     if (this == &other) return *this;
-    if (m_program) glDeleteProgram(m_program);
+    if (programID) glDeleteProgram(programID);
 
-    m_program = other.m_program;
-    other.m_program = 0;
+    programID = other.programID;
+    other.programID = 0;
 
     return *this;
 }
@@ -43,20 +43,20 @@ ShaderLoader ShaderLoader::fromFiles(const std::string& vsPath, const std::strin
     std::string vsSrc = readTextFile(vsPath);
     std::string fsSrc = readTextFile(fsPath);
 
-    GLuint vs = compile(GL_VERTEX_SHADER, vsSrc, "vertex");
-    GLuint fs = compile(GL_FRAGMENT_SHADER, fsSrc, "fragment");
-    GLuint prog = link(vs, fs);
+    GLuint vertexShader = compile(GL_VERTEX_SHADER, vsSrc, "vertex");
+    GLuint fragmentShader = compile(GL_FRAGMENT_SHADER, fsSrc, "fragment");
+    GLuint prog = link(vertexShader, fragmentShader);
 
-    glDeleteShader(vs);
-    glDeleteShader(fs);
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
 
     return ShaderLoader(prog);
 }
 
-GLuint ShaderLoader::compile(GLenum type, const std::string& src, const char* stageName) 
+GLuint ShaderLoader::compile(GLenum type, const std::string& source, const char* stageName) 
 {
     GLuint s = glCreateShader(type);
-    const char* csrc = src.c_str();
+    const char* csrc = source.c_str();
 
     glShaderSource(s, 1, &csrc, nullptr);
     glCompileShader(s);
@@ -76,12 +76,12 @@ GLuint ShaderLoader::compile(GLenum type, const std::string& src, const char* st
     return s;
 }
 
-GLuint ShaderLoader::link(GLuint vs, GLuint fs) 
+GLuint ShaderLoader::link(GLuint vertexShader, GLuint fragmentShader) 
 {
     GLuint p = glCreateProgram();
 
-    glAttachShader(p, vs);
-    glAttachShader(p, fs);
+    glAttachShader(p, vertexShader);
+    glAttachShader(p, fragmentShader);
     glLinkProgram(p);
 
     GLint ok = 0; glGetProgramiv(p, GL_LINK_STATUS, &ok);
@@ -93,7 +93,7 @@ GLuint ShaderLoader::link(GLuint vs, GLuint fs)
 
         glDeleteProgram(p);
 
-        throw std::runtime_error(std::string("program link error:\n") + log);
+        throw std::runtime_error(std::string("programID link error:\n") + log);
     }
 
     return p;
@@ -101,17 +101,23 @@ GLuint ShaderLoader::link(GLuint vs, GLuint fs)
 
 void ShaderLoader::use() const 
 {
-    glUseProgram(m_program);
+    glUseProgram(programID);
 }
 
 void ShaderLoader::setMat4(const char* name, const glm::mat4& m) const 
 {
-    GLint loc = glGetUniformLocation(m_program, name);
+    GLint loc = glGetUniformLocation(programID, name);
     glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(m));
 }
 
 void ShaderLoader::setVec3(const char* name, const glm::vec3& v) const 
 {
-    GLint loc = glGetUniformLocation(m_program, name);
+    GLint loc = glGetUniformLocation(programID, name);
     glUniform3fv(loc, 1, &v.x);
+}
+
+void ShaderLoader::setFloat(const char* name, float v) const 
+{
+    GLint loc = glGetUniformLocation(programID, name);
+    glUniform1f(loc, v);
 }

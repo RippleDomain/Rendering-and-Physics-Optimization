@@ -8,7 +8,7 @@
 namespace
 {
     //RNG method for random colors.
-    std::mt19937& rng()
+    std::mt19937& colorRNG()
     {
         static thread_local std::mt19937 gen{ std::random_device{}() };
         return gen;
@@ -18,34 +18,40 @@ namespace
     std::uniform_real_distribution<float> colorDist(0.3f, 1.0f);
 }
 
-Sphere::Sphere(unsigned XSegments, unsigned YSegments, const glm::vec3& getPosition, float getScale) : m_position(getPosition), m_scale(getScale)
+Sphere::Sphere(unsigned XSegments, unsigned YSegments, const glm::vec3& getPosition, float getScale) : position(getPosition), scale(getScale)
 {
     //Each ball gets a random color.
-    m_color = glm::vec3(colorDist(rng()), colorDist(rng()), colorDist(rng()));
-    m_mass = m_scale * m_scale * m_scale;
+    color = glm::vec3(colorDist(colorRNG()), colorDist(colorRNG()), colorDist(colorRNG()));
+    mass = scale * scale * scale;
+
+#if INSTANCING
+    (void)XSegments;
+    (void)YSegments;
+#else
     build(XSegments, YSegments);
+#endif
 }
 
 Sphere::~Sphere()
 {
-    if (m_ebo) glDeleteBuffers(1, &m_ebo);
-    if (m_vbo) glDeleteBuffers(1, &m_vbo);
-    if (m_vao) glDeleteVertexArrays(1, &m_vao);
+    if (elementBuffer) glDeleteBuffers(1, &elementBuffer);
+    if (vertexBuffer) glDeleteBuffers(1, &vertexBuffer);
+    if (vertexArray) glDeleteVertexArrays(1, &vertexArray);
 }
 
 Sphere::Sphere(Sphere&& other) noexcept
 {
-    m_vao = other.m_vao; other.m_vao = 0;
-    m_vbo = other.m_vbo; other.m_vbo = 0;
-    m_ebo = other.m_ebo; other.m_ebo = 0;
-    m_indexCount = other.m_indexCount; other.m_indexCount = 0;
+    vertexArray = other.vertexArray; other.vertexArray = 0;
+    vertexBuffer = other.vertexBuffer; other.vertexBuffer = 0;
+    elementBuffer = other.elementBuffer; other.elementBuffer = 0;
+    indexCount = other.indexCount; other.indexCount = 0;
 
-    m_position = other.m_position;
-    m_scale = other.m_scale;
-    m_color = other.m_color;
+    position = other.position;
+    scale = other.scale;
+    color = other.color;
 
-    m_velocity = other.m_velocity;
-    m_mass = other.m_mass;
+    velocity = other.velocity;
+    mass = other.mass;
 }
 
 Sphere& Sphere::operator=(Sphere&& other) noexcept
@@ -53,27 +59,31 @@ Sphere& Sphere::operator=(Sphere&& other) noexcept
     if (this == &other) return *this;
 
     //Clean up existing resources.
-    if (m_ebo) glDeleteBuffers(1, &m_ebo);
-    if (m_vbo) glDeleteBuffers(1, &m_vbo);
-    if (m_vao) glDeleteVertexArrays(1, &m_vao);
+    if (elementBuffer) glDeleteBuffers(1, &elementBuffer);
+    if (vertexBuffer) glDeleteBuffers(1, &vertexBuffer);
+    if (vertexArray) glDeleteVertexArrays(1, &vertexArray);
 
-    m_vao = other.m_vao; other.m_vao = 0;
-    m_vbo = other.m_vbo; other.m_vbo = 0;
-    m_ebo = other.m_ebo; other.m_ebo = 0;
-    m_indexCount = other.m_indexCount; other.m_indexCount = 0;
+    vertexArray = other.vertexArray; other.vertexArray = 0;
+    vertexBuffer = other.vertexBuffer; other.vertexBuffer = 0;
+    elementBuffer = other.elementBuffer; other.elementBuffer = 0;
+    indexCount = other.indexCount; other.indexCount = 0;
 
-    m_position = other.m_position;
-    m_scale = other.m_scale;
-    m_color = other.m_color;
+    position = other.position;
+    scale = other.scale;
+    color = other.color;
 
-    m_velocity = other.m_velocity;
-    m_mass = other.m_mass;
+    velocity = other.velocity;
+    mass = other.mass;
 
     return *this;
 }
 
 void Sphere::build(unsigned XSegments, unsigned YSegments)
 {
+#if INSTANCING
+    (void)XSegments;
+    (void)YSegments;
+#else
     std::vector<float> vertices;
     std::vector<unsigned> indices;
 
@@ -126,19 +136,19 @@ void Sphere::build(unsigned XSegments, unsigned YSegments)
         }
     }
 
-    m_indexCount = static_cast<GLsizei>(indices.size());
+    indexCount = static_cast<GLsizei>(indices.size());
 
-    // GL buffers
-    glGenVertexArrays(1, &m_vao);
-    glGenBuffers(1, &m_vbo);
-    glGenBuffers(1, &m_ebo);
+    //GL buffers.
+    glGenVertexArrays(1, &vertexArray);
+    glGenBuffers(1, &vertexBuffer);
+    glGenBuffers(1, &elementBuffer);
 
-    glBindVertexArray(m_vao);
+    glBindVertexArray(vertexArray);
 
-    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned), indices.data(), GL_STATIC_DRAW);
 
     GLsizei stride = (3 + 3) * sizeof(float);
@@ -149,37 +159,40 @@ void Sphere::build(unsigned XSegments, unsigned YSegments)
     glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);
+#endif
 }
 
-glm::mat4 Sphere::modelMatrix(float timeSeconds) const
+glm::mat4 Sphere::modelMatrix(float dt) const
 {
     glm::mat4 M(1.0f);
 
-    M = glm::translate(M, m_position);
-    M = glm::rotate(M, timeSeconds * 0.5f, glm::vec3(0, 1, 0));
-    M = glm::scale(M, glm::vec3(m_scale));
+    M = glm::translate(M, position);
+    M = glm::rotate(M, dt * 0.5f, glm::vec3(0, 1, 0));
+    M = glm::scale(M, glm::vec3(scale));
 
     return M;
 }
 
 void Sphere::draw() const
 {
-    glBindVertexArray(m_vao);
-    glDrawElements(GL_TRIANGLES, m_indexCount, GL_UNSIGNED_INT, 0);
+#if !INSTANCING
+    glBindVertexArray(vertexArray);
+    glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
+#endif
 }
 
 void Sphere::applyGravity(const glm::vec3& acceleration, float dt)
 {
-    m_velocity += acceleration * dt;
-    m_position += m_velocity * dt;
+    velocity += acceleration * dt;
+    position += velocity * dt;
 }
 
 void Sphere::collide(Sphere& other, float restitution)
 {
-    glm::vec3 d = m_position - other.m_position;
+    glm::vec3 d = position - other.position;
     float dist2 = glm::dot(d, d);
-    float r = m_scale + other.m_scale;
+    float r = scale + other.scale;
     float r2 = r * r;
 
     if (dist2 >= r2) return;
@@ -187,17 +200,17 @@ void Sphere::collide(Sphere& other, float restitution)
     float dist = std::sqrt(std::max(dist2, 1e-8f));
     glm::vec3 n = (dist > 1e-6f) ? (d / dist) : glm::vec3(1.0f, 0.0f, 0.0f);
 
-    float invA = 1.0f / m_mass;
-    float invB = 1.0f / other.m_mass;
+    float invA = 1.0f / mass;
+    float invB = 1.0f / other.mass;
 
     float penetration = r - dist;
     const float percent = 0.8f;
     const float slop = 0.001f;
     glm::vec3 correction = ((std::max(penetration - slop, 0.0f) / (invA + invB)) * percent) * n;
-    m_position += correction * invA;
-    other.m_position -= correction * invB;
+    position += correction * invA;
+    other.position -= correction * invB;
 
-    glm::vec3 rv = m_velocity - other.m_velocity;
+    glm::vec3 rv = velocity - other.velocity;
     float velAlongNormal = glm::dot(rv, n);
     if (velAlongNormal > 0.0f) return;
 
@@ -205,6 +218,6 @@ void Sphere::collide(Sphere& other, float restitution)
     j /= (invA + invB);
 
     glm::vec3 impulse = j * n;
-    m_velocity += impulse * invA;
-    other.m_velocity -= impulse * invB;
+    velocity += impulse * invA;
+    other.velocity -= impulse * invB;
 }
