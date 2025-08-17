@@ -178,12 +178,9 @@ void SphereInstance::updateInstances(const std::vector<Sphere>& spheres, int cou
 
     GLsizeiptr byteSize = static_cast<GLsizeiptr>(data.size() * sizeof(float));
 
-    // Orphan the old storage to avoid stalls
     glBufferData(GL_ARRAY_BUFFER, byteSize, nullptr, GL_STREAM_DRAW);
 
-    // Map and write
-    void* ptr = glMapBufferRange(GL_ARRAY_BUFFER, 0, byteSize,
-        GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+    void* ptr = glMapBufferRange(GL_ARRAY_BUFFER, 0, byteSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
 
     if (ptr)
     {
@@ -192,7 +189,6 @@ void SphereInstance::updateInstances(const std::vector<Sphere>& spheres, int cou
     }
     else
     {
-        // Fallback in case mapping fails (rare)
         glBufferSubData(GL_ARRAY_BUFFER, 0, byteSize, data.data());
     }
 }
