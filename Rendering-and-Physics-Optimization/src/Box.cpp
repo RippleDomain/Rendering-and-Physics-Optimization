@@ -106,5 +106,5 @@ void Box::resolveCollision(Sphere& s, float restitution) const
     }
 
     s.setPosition(p);
-    s.setVelocity(v);
+    s.setVelocity(v * 1.0007f); //1.0005f multiplier in order to move the spheres around more.
 }

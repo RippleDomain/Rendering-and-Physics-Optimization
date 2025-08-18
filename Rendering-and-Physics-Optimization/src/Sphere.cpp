@@ -1,6 +1,7 @@
 #include "Sphere.h"
 
 #include <gtc/matrix_transform.hpp>
+#include <gtc/packing.hpp>
 #include <cmath>
 #include <random>
 #include <algorithm>
@@ -81,22 +82,21 @@ Sphere& Sphere::operator=(Sphere&& other) noexcept
 void Sphere::build(unsigned XSegments, unsigned YSegments)
 {
 #if INSTANCING
-    (void)XSegments;
-    (void)YSegments;
+    (void)XSegments; (void)YSegments;
 #else
-    std::vector<float> vertices;
-    std::vector<unsigned> indices;
+    struct VtxPN { float px, py, pz; std::uint32_t n; };
+    std::vector<VtxPN> vertices;
+    std::vector<std::uint16_t> indices;
 
-    vertices.reserve((XSegments + 1) * (YSegments + 1) * 6);
+    vertices.reserve((XSegments + 1) * (YSegments + 1));
     indices.reserve(XSegments * YSegments * 6);
 
-    //Vertices.
     for (unsigned y = 0; y <= YSegments; ++y)
     {
         for (unsigned x = 0; x <= XSegments; ++x)
         {
-            float xs = static_cast<float>(x) / static_cast<float>(XSegments);
-            float ys = static_cast<float>(y) / static_cast<float>(YSegments);
+            float xs = float(x) / float(XSegments);
+            float ys = float(y) / float(YSegments);
             float phi = xs * 6.2831853071795864769f;
             float theta = ys * 3.14159265358979323846f;
 
@@ -104,41 +104,27 @@ void Sphere::build(unsigned XSegments, unsigned YSegments)
             float py = std::cos(theta);
             float pz = std::sin(phi) * std::sin(theta);
 
-            //Position.
-            vertices.push_back(px);
-            vertices.push_back(py);
-            vertices.push_back(pz);
-
-            //Normal.
-            vertices.push_back(px);
-            vertices.push_back(py);
-            vertices.push_back(pz);
+            std::uint32_t nPacked = glm::packSnorm3x10_1x2(glm::vec4(px, py, pz, 0.0f));
+            vertices.push_back({ px, py, pz, nPacked });
         }
     }
 
-    //Indices.
     for (unsigned y = 0; y < YSegments; ++y)
     {
         for (unsigned x = 0; x < XSegments; ++x)
         {
-            unsigned i0 = y * (XSegments + 1) + x;
-            unsigned i1 = (y + 1) * (XSegments + 1) + x;
-            unsigned i2 = (y + 1) * (XSegments + 1) + x + 1;
-            unsigned i3 = y * (XSegments + 1) + x + 1;
+            std::uint16_t i0 = static_cast<std::uint16_t>(y * (XSegments + 1) + x);
+            std::uint16_t i1 = static_cast<std::uint16_t>((y + 1) * (XSegments + 1) + x);
+            std::uint16_t i2 = static_cast<std::uint16_t>((y + 1) * (XSegments + 1) + x + 1);
+            std::uint16_t i3 = static_cast<std::uint16_t>(y * (XSegments + 1) + x + 1);
 
-            indices.push_back(i0);
-            indices.push_back(i1);
-            indices.push_back(i2);
-
-            indices.push_back(i0);
-            indices.push_back(i2);
-            indices.push_back(i3);
+            indices.push_back(i0); indices.push_back(i1); indices.push_back(i2);
+            indices.push_back(i0); indices.push_back(i2); indices.push_back(i3);
         }
     }
 
     indexCount = static_cast<GLsizei>(indices.size());
 
-    //GL buffers.
     glGenVertexArrays(1, &vertexArray);
     glGenBuffers(1, &vertexBuffer);
     glGenBuffers(1, &elementBuffer);
@@ -146,16 +132,15 @@ void Sphere::build(unsigned XSegments, unsigned YSegments)
     glBindVertexArray(vertexArray);
 
     glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(VtxPN), vertices.data(), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned), indices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(std::uint16_t), indices.data(), GL_STATIC_DRAW);
 
-    GLsizei stride = (3 + 3) * sizeof(float);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VtxPN), (void*)offsetof(VtxPN, px));
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 4, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(VtxPN), (void*)offsetof(VtxPN, n));
     glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);
@@ -177,7 +162,7 @@ void Sphere::draw() const
 {
 #if !INSTANCING
     glBindVertexArray(vertexArray);
-    glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, 0);
     glBindVertexArray(0);
 #endif
 }
@@ -218,6 +203,6 @@ void Sphere::collide(Sphere& other, float restitution)
     j /= (invA + invB);
 
     glm::vec3 impulse = j * n;
-    velocity += impulse * invA;
-    other.velocity -= impulse * invB;
+    velocity += impulse * invA * 1.0001f; //1.0001f multiplier in order to move the spheres around more.
+    other.velocity -= impulse * invB * 1.0001f; //1.0001f multiplier in order to move the spheres around more.
 }

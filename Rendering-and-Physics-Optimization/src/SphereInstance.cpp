@@ -2,8 +2,26 @@
 #include "Sphere.h"
 
 #include <gtc/type_ptr.hpp>
+#include <gtc/packing.hpp>
 #include <vector>
 #include <cmath>
+#include <cstdint>
+#include <cstring>
+
+//--INSTANCE-DATA-PACKED--
+namespace
+{
+    //24 bytes per instance, tightly packed.
+    struct InstanceDataPacked
+    {
+        glm::vec3 pos;          //12
+        std::uint16_t scale;    //2 (half)
+        std::uint8_t  color[4]; //4 (UNORM8 RGBA, A=255)
+        std::uint16_t angle;    //2 (half)
+        std::uint16_t pad = 0;  //2
+    };
+}
+//--INSTANCE-DATA-PACKED-END--
 
 SphereInstance::SphereInstance(unsigned XSegments, unsigned YSegments, int maxInstances)
 {
@@ -15,7 +33,10 @@ SphereInstance::SphereInstance(unsigned XSegments, unsigned YSegments, int maxIn
     glBindVertexArray(vertexArray);
     glBindBuffer(GL_ARRAY_BUFFER, instanceVertexBuffer);
 
-    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(capacity) * sizeof(float) * 20, nullptr, GL_STREAM_DRAW);
+    glBufferData(GL_ARRAY_BUFFER,
+        static_cast<GLsizeiptr>(capacity) * static_cast<GLsizeiptr>(sizeof(InstanceDataPacked)),
+        nullptr, GL_STREAM_DRAW);
+
     setupInstanceAttribs();
     glBindVertexArray(0);
 }
@@ -28,49 +49,25 @@ SphereInstance::~SphereInstance()
     if (vertexArray)  glDeleteVertexArrays(1, &vertexArray);
 }
 
-SphereInstance::SphereInstance(SphereInstance&& o) noexcept
-{
-    vertexArray = o.vertexArray; o.vertexArray = 0;
-    vertexBuffer = o.vertexBuffer; o.vertexBuffer = 0;
-    elementBuffer = o.elementBuffer; o.elementBuffer = 0;
-    instanceVertexBuffer = o.instanceVertexBuffer; o.instanceVertexBuffer = 0;
-    indexCount = o.indexCount; o.indexCount = 0;
-    capacity = o.capacity; o.capacity = 0;
-}
-
-SphereInstance& SphereInstance::operator=(SphereInstance&& o) noexcept
-{
-    if (this == &o) return *this;
-
-    if (instanceVertexBuffer) glDeleteBuffers(1, &instanceVertexBuffer);
-    if (elementBuffer)  glDeleteBuffers(1, &elementBuffer);
-    if (vertexBuffer)  glDeleteBuffers(1, &vertexBuffer);
-    if (vertexArray)  glDeleteVertexArrays(1, &vertexArray);
-
-    vertexArray = o.vertexArray; o.vertexArray = 0;
-    vertexBuffer = o.vertexBuffer; o.vertexBuffer = 0;
-    elementBuffer = o.elementBuffer; o.elementBuffer = 0;
-    instanceVertexBuffer = o.instanceVertexBuffer; o.instanceVertexBuffer = 0;
-    indexCount = o.indexCount; o.indexCount = 0;
-    capacity = o.capacity; o.capacity = 0;
-
-    return *this;
-}
-
 void SphereInstance::buildMesh(unsigned XSegments, unsigned YSegments)
 {
-    std::vector<float> vertices;
-    std::vector<unsigned> indices;
+    struct VtxPN {
+        float px, py, pz;
+        std::uint32_t n;
+    };
 
-    vertices.reserve((XSegments + 1) * (YSegments + 1) * 6);
+    std::vector<VtxPN> vertices;
+    std::vector<std::uint16_t> indices;
+
+    vertices.reserve((XSegments + 1) * (YSegments + 1));
     indices.reserve(XSegments * YSegments * 6);
 
     for (unsigned y = 0; y <= YSegments; ++y)
     {
         for (unsigned x = 0; x <= XSegments; ++x)
         {
-            float xs = static_cast<float>(x) / static_cast<float>(XSegments);
-            float ys = static_cast<float>(y) / static_cast<float>(YSegments);
+            float xs = float(x) / float(XSegments);
+            float ys = float(y) / float(YSegments);
             float phi = xs * 6.2831853071795864769f;
             float theta = ys * 3.14159265358979323846f;
 
@@ -78,14 +75,10 @@ void SphereInstance::buildMesh(unsigned XSegments, unsigned YSegments)
             float py = std::cos(theta);
             float pz = std::sin(phi) * std::sin(theta);
 
-            //Position.
-            vertices.push_back(px);
-            vertices.push_back(py);
-            vertices.push_back(pz);
-            //Normal.
-            vertices.push_back(px);
-            vertices.push_back(py);
-            vertices.push_back(pz);
+            glm::vec4 n(px, py, pz, 0.0f);
+            std::uint32_t nPacked = glm::packSnorm3x10_1x2(n);
+
+            vertices.push_back({ px, py, pz, nPacked });
         }
     }
 
@@ -93,21 +86,15 @@ void SphereInstance::buildMesh(unsigned XSegments, unsigned YSegments)
     {
         for (unsigned x = 0; x < XSegments; ++x)
         {
-            unsigned i0 = y * (XSegments + 1) + x;
-            unsigned i1 = (y + 1) * (XSegments + 1) + x;
-            unsigned i2 = (y + 1) * (XSegments + 1) + x + 1;
-            unsigned i3 = y * (XSegments + 1) + x + 1;
+            std::uint16_t i0 = static_cast<std::uint16_t>(y * (XSegments + 1) + x);
+            std::uint16_t i1 = static_cast<std::uint16_t>((y + 1) * (XSegments + 1) + x);
+            std::uint16_t i2 = static_cast<std::uint16_t>((y + 1) * (XSegments + 1) + x + 1);
+            std::uint16_t i3 = static_cast<std::uint16_t>(y * (XSegments + 1) + x + 1);
 
-            indices.push_back(i0);
-            indices.push_back(i1);
-            indices.push_back(i2);
-
-            indices.push_back(i0);
-            indices.push_back(i2);
-            indices.push_back(i3);
+            indices.push_back(i0); indices.push_back(i1); indices.push_back(i2);
+            indices.push_back(i0); indices.push_back(i2); indices.push_back(i3);
         }
     }
-
     indexCount = static_cast<GLsizei>(indices.size());
 
     glGenVertexArrays(1, &vertexArray);
@@ -117,16 +104,15 @@ void SphereInstance::buildMesh(unsigned XSegments, unsigned YSegments)
     glBindVertexArray(vertexArray);
 
     glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(VtxPN), vertices.data(), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned), indices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(std::uint16_t), indices.data(), GL_STATIC_DRAW);
 
-    GLsizei stride = (3 + 3) * sizeof(float);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VtxPN), (void*)offsetof(VtxPN, px));
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 4, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(VtxPN), (void*)offsetof(VtxPN, n));
     glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);
@@ -137,65 +123,83 @@ void SphereInstance::setupInstanceAttribs()
     glBindVertexArray(vertexArray);
     glBindBuffer(GL_ARRAY_BUFFER, instanceVertexBuffer);
 
-    GLsizei stride = sizeof(float) * 8;
+    const GLsizei stride = static_cast<GLsizei>(sizeof(InstanceDataPacked));
 
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float) * 0));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(InstanceDataPacked, pos));
     glVertexAttribDivisor(2, 1);
 
     glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, stride, (void*)(sizeof(float) * 4));
+    glVertexAttribPointer(3, 1, GL_HALF_FLOAT, GL_FALSE, stride, (void*)offsetof(InstanceDataPacked, scale));
     glVertexAttribDivisor(3, 1);
+
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, (void*)offsetof(InstanceDataPacked, color));
+    glVertexAttribDivisor(4, 1);
+
+    glEnableVertexAttribArray(5);
+    glVertexAttribPointer(5, 1, GL_HALF_FLOAT, GL_FALSE, stride, (void*)offsetof(InstanceDataPacked, angle));
+    glVertexAttribDivisor(5, 1);
 
     glBindVertexArray(0);
 }
 
 void SphereInstance::updateInstances(const std::vector<Sphere>& spheres, int count, float timeSeconds)
 {
-    std::vector<float> data;
-    data.reserve(static_cast<size_t>(count) * 8);
-
-    for (int i = 0; i < count; ++i)
-    {
-        const glm::vec3 p = spheres[i].getPosition();
-        const float     s = spheres[i].getScale();
-        const glm::vec3 c = spheres[i].getColor();
-
-        float angle = timeSeconds * 0.5f;
-
-        data.push_back(p.x);
-        data.push_back(p.y);
-        data.push_back(p.z);
-        data.push_back(s);
-
-        data.push_back(c.x);
-        data.push_back(c.y);
-        data.push_back(c.z);
-        data.push_back(angle);
-    }
-
+    const GLsizeiptr byteSize = static_cast<GLsizeiptr>(count) * static_cast<GLsizeiptr>(sizeof(InstanceDataPacked));
     glBindBuffer(GL_ARRAY_BUFFER, instanceVertexBuffer);
-
-    GLsizeiptr byteSize = static_cast<GLsizeiptr>(data.size() * sizeof(float));
-
     glBufferData(GL_ARRAY_BUFFER, byteSize, nullptr, GL_STREAM_DRAW);
 
-    void* ptr = glMapBufferRange(GL_ARRAY_BUFFER, 0, byteSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+    auto* dst = static_cast<InstanceDataPacked*>(
+        glMapBufferRange(GL_ARRAY_BUFFER, 0, byteSize,
+            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT));
 
-    if (ptr)
+    if (dst)
     {
-        std::memcpy(ptr, data.data(), static_cast<size_t>(byteSize));
+        for (int i = 0; i < count; ++i)
+        {
+            const glm::vec3 p = spheres[i].getPosition();
+            const float     s = spheres[i].getScale();
+            const glm::vec3 c = spheres[i].getColor();
+
+            dst[i].pos = p;
+            dst[i].scale = glm::packHalf1x16(s);
+
+            dst[i].color[0] = static_cast<std::uint8_t>(glm::clamp(c.r, 0.0f, 1.0f) * 255.0f + 0.5f);
+            dst[i].color[1] = static_cast<std::uint8_t>(glm::clamp(c.g, 0.0f, 1.0f) * 255.0f + 0.5f);
+            dst[i].color[2] = static_cast<std::uint8_t>(glm::clamp(c.b, 0.0f, 1.0f) * 255.0f + 0.5f);
+            dst[i].color[3] = 255;
+
+            const float angle = timeSeconds * 0.5f;
+
+            dst[i].angle = glm::packHalf1x16(angle);
+        }
+
         glUnmapBuffer(GL_ARRAY_BUFFER);
     }
     else
     {
-        glBufferSubData(GL_ARRAY_BUFFER, 0, byteSize, data.data());
+        std::vector<InstanceDataPacked> scratch(static_cast<size_t>(count));
+
+        for (int i = 0; i < count; ++i)
+        {
+            scratch[i].pos = spheres[i].getPosition();
+            scratch[i].scale = glm::packHalf1x16(spheres[i].getScale());
+            const glm::vec3 c = spheres[i].getColor();
+            scratch[i].color[0] = static_cast<std::uint8_t>(glm::clamp(c.r, 0.0f, 1.0f) * 255.0f + 0.5f);
+            scratch[i].color[1] = static_cast<std::uint8_t>(glm::clamp(c.g, 0.0f, 1.0f) * 255.0f + 0.5f);
+            scratch[i].color[2] = static_cast<std::uint8_t>(glm::clamp(c.b, 0.0f, 1.0f) * 255.0f + 0.5f);
+            scratch[i].color[3] = 255;
+            scratch[i].angle = glm::packHalf1x16(timeSeconds * 0.5f);
+        }
+
+        glBufferSubData(GL_ARRAY_BUFFER, 0, byteSize, scratch.data());
     }
 }
 
 void SphereInstance::draw(GLsizei count) const
 {
     glBindVertexArray(vertexArray);
-    glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0, count);
+    glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, 0, count);
     glBindVertexArray(0);
 }

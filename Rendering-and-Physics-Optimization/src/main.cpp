@@ -1,4 +1,4 @@
-#define INSTANCING 1
+#define INSTANCING 0
 #define PHYSICS 0
 
 #include <gtc/matrix_transform.hpp>
@@ -31,7 +31,7 @@ int main()
     try
     {
         //Create window + GL context (3.3 core) with vsync on.
-        OpenGLWindow window(1920, 1080, "Optimization", 3, 3, true);
+        OpenGLWindow window(1920, 1080, "Optimization", 3, 3, false);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
