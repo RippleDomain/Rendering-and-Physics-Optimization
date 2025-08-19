@@ -1,11 +1,42 @@
-#include "ShaderLoader.h"
+#pragma once
 
+#include <glad/glad.h>
+#include <glm.hpp>
 #include <gtc/type_ptr.hpp>
+#include <string>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
 
-static std::string readTextFile(const std::string& path) 
+class ShaderLoader
+{
+public:
+    ShaderLoader() = default;
+    ~ShaderLoader();
+
+    ShaderLoader(const ShaderLoader&) = delete;
+    ShaderLoader& operator=(const ShaderLoader&) = delete;
+    ShaderLoader(ShaderLoader&& other) noexcept;
+    ShaderLoader& operator=(ShaderLoader&& other) noexcept;
+
+    static ShaderLoader fromFiles(const std::string& vsPath, const std::string& fsPath);
+
+    void use() const;
+    GLuint getID() const { return programID; }
+
+    void setMat4(const char* name, const glm::mat4& m) const;
+    void setVec3(const char* name, const glm::vec3& v) const;
+    void setFloat(const char* name, float value) const;
+
+private:
+    explicit ShaderLoader(GLuint program) : programID(program) {}
+    static GLuint compile(GLenum type, const std::string& source, const char* stageName);
+    static GLuint link(GLuint vertexShader, GLuint fragmentShader);
+
+    GLuint programID{ 0 };
+};
+
+static inline std::string readTextFile(const std::string& path)
 {
     std::ifstream ifs(path, std::ios::in);
 
@@ -16,18 +47,18 @@ static std::string readTextFile(const std::string& path)
     return oss.str();
 }
 
-ShaderLoader::~ShaderLoader() 
+inline ShaderLoader::~ShaderLoader()
 {
     if (programID) glDeleteProgram(programID);
 }
 
-ShaderLoader::ShaderLoader(ShaderLoader&& other) noexcept 
+inline ShaderLoader::ShaderLoader(ShaderLoader&& other) noexcept
 {
     programID = other.programID;
     other.programID = 0;
 }
 
-ShaderLoader& ShaderLoader::operator=(ShaderLoader&& other) noexcept 
+inline ShaderLoader& ShaderLoader::operator=(ShaderLoader&& other) noexcept
 {
     if (this == &other) return *this;
     if (programID) glDeleteProgram(programID);
@@ -38,7 +69,7 @@ ShaderLoader& ShaderLoader::operator=(ShaderLoader&& other) noexcept
     return *this;
 }
 
-ShaderLoader ShaderLoader::fromFiles(const std::string& vsPath, const std::string& fsPath) 
+inline ShaderLoader ShaderLoader::fromFiles(const std::string& vsPath, const std::string& fsPath)
 {
     std::string vsSrc = readTextFile(vsPath);
     std::string fsSrc = readTextFile(fsPath);
@@ -53,7 +84,7 @@ ShaderLoader ShaderLoader::fromFiles(const std::string& vsPath, const std::strin
     return ShaderLoader(prog);
 }
 
-GLuint ShaderLoader::compile(GLenum type, const std::string& source, const char* stageName) 
+inline GLuint ShaderLoader::compile(GLenum type, const std::string& source, const char* stageName)
 {
     GLuint s = glCreateShader(type);
     const char* csrc = source.c_str();
@@ -63,7 +94,7 @@ GLuint ShaderLoader::compile(GLenum type, const std::string& source, const char*
 
     GLint ok = 0; glGetShaderiv(s, GL_COMPILE_STATUS, &ok);
 
-    if (!ok) 
+    if (!ok)
     {
         GLint len = 0; glGetShaderiv(s, GL_INFO_LOG_LENGTH, &len);
         std::string log(len, '\0'); glGetShaderInfoLog(s, len, nullptr, log.data());
@@ -76,7 +107,7 @@ GLuint ShaderLoader::compile(GLenum type, const std::string& source, const char*
     return s;
 }
 
-GLuint ShaderLoader::link(GLuint vertexShader, GLuint fragmentShader) 
+inline GLuint ShaderLoader::link(GLuint vertexShader, GLuint fragmentShader)
 {
     GLuint p = glCreateProgram();
 
@@ -86,7 +117,7 @@ GLuint ShaderLoader::link(GLuint vertexShader, GLuint fragmentShader)
 
     GLint ok = 0; glGetProgramiv(p, GL_LINK_STATUS, &ok);
 
-    if (!ok) 
+    if (!ok)
     {
         GLint len = 0; glGetProgramiv(p, GL_INFO_LOG_LENGTH, &len);
         std::string log(len, '\0'); glGetProgramInfoLog(p, len, nullptr, log.data());
@@ -99,24 +130,24 @@ GLuint ShaderLoader::link(GLuint vertexShader, GLuint fragmentShader)
     return p;
 }
 
-void ShaderLoader::use() const 
+inline void ShaderLoader::use() const
 {
     glUseProgram(programID);
 }
 
-void ShaderLoader::setMat4(const char* name, const glm::mat4& m) const 
+inline void ShaderLoader::setMat4(const char* name, const glm::mat4& m) const
 {
     GLint loc = glGetUniformLocation(programID, name);
     glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(m));
 }
 
-void ShaderLoader::setVec3(const char* name, const glm::vec3& v) const 
+inline void ShaderLoader::setVec3(const char* name, const glm::vec3& v) const
 {
     GLint loc = glGetUniformLocation(programID, name);
     glUniform3fv(loc, 1, &v.x);
 }
 
-void ShaderLoader::setFloat(const char* name, float v) const 
+inline void ShaderLoader::setFloat(const char* name, float v) const
 {
     GLint loc = glGetUniformLocation(programID, name);
     glUniform1f(loc, v);

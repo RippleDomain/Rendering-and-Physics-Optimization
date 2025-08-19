@@ -14,10 +14,9 @@ public:
 
     SphereInstance(const SphereInstance&) = delete;
     SphereInstance& operator=(const SphereInstance&) = delete;
-    SphereInstance(SphereInstance&&) noexcept;
-    SphereInstance& operator=(SphereInstance&&) noexcept;
 
     void updateInstances(const std::vector<Sphere>& spheres, int count, float timeSeconds);
+    void updateInstancesFiltered(const std::vector<Sphere>& spheres, const std::vector<int>& visible, int count, float timeSeconds);
     void draw(GLsizei count) const;
 
 private:

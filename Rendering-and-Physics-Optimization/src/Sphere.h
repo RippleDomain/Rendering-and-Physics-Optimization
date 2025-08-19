@@ -9,15 +9,12 @@ class Sphere
 {
 public:
     //XSegments = longitude, YSegments = latitude
-    Sphere(unsigned XSegments = 64, unsigned YSegments = 64, const glm::vec3& getPosition = glm::vec3(0.0f), float getScale = 0.25f);
-    ~Sphere();
+    Sphere(unsigned XSegments = 24, unsigned YSegments = 24, const glm::vec3& getPosition = glm::vec3(0.0f), float getScale = 0.25f);
 
     Sphere(const Sphere&) = delete;
     Sphere& operator=(const Sphere&) = delete;
     Sphere(Sphere&&) noexcept;
     Sphere& operator=(Sphere&&) noexcept;
-
-    void draw() const;
 
     const glm::vec3& getPosition() const { return position; }
     float getScale() const { return scale; }

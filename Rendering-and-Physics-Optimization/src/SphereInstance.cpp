@@ -150,9 +150,7 @@ void SphereInstance::updateInstances(const std::vector<Sphere>& spheres, int cou
     glBindBuffer(GL_ARRAY_BUFFER, instanceVertexBuffer);
     glBufferData(GL_ARRAY_BUFFER, byteSize, nullptr, GL_STREAM_DRAW);
 
-    auto* dst = static_cast<InstanceDataPacked*>(
-        glMapBufferRange(GL_ARRAY_BUFFER, 0, byteSize,
-            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT));
+    auto* dst = static_cast<InstanceDataPacked*>(glMapBufferRange(GL_ARRAY_BUFFER, 0, byteSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
 
     if (dst)
     {
@@ -191,6 +189,58 @@ void SphereInstance::updateInstances(const std::vector<Sphere>& spheres, int cou
             scratch[i].color[2] = static_cast<std::uint8_t>(glm::clamp(c.b, 0.0f, 1.0f) * 255.0f + 0.5f);
             scratch[i].color[3] = 255;
             scratch[i].angle = glm::packHalf1x16(timeSeconds * 0.5f);
+        }
+
+        glBufferSubData(GL_ARRAY_BUFFER, 0, byteSize, scratch.data());
+    }
+}
+
+void SphereInstance::updateInstancesFiltered(const std::vector<Sphere>& spheres, const std::vector<int>& visible, int count, float timeSeconds)
+{
+    const int c = std::min<int>(count, (int)visible.size());
+    const GLsizeiptr byteSize = static_cast<GLsizeiptr>(c) * static_cast<GLsizeiptr>(sizeof(InstanceDataPacked));
+
+    glBindBuffer(GL_ARRAY_BUFFER, instanceVertexBuffer);
+
+    auto* dst = static_cast<InstanceDataPacked*>(glMapBufferRange(GL_ARRAY_BUFFER, 0, byteSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
+
+    if (dst)
+    {
+        for (int k = 0; k < c; ++k)
+        {
+            const Sphere& s = spheres[visible[k]];
+            const glm::vec3 p = s.getPosition();
+            const float     sc = s.getScale();
+            const glm::vec3 col = s.getColor();
+
+            dst[k].pos = p;
+            dst[k].scale = glm::packHalf1x16(sc);
+            dst[k].color[0] = static_cast<std::uint8_t>(glm::clamp(col.r, 0.0f, 1.0f) * 255.0f + 0.5f);
+            dst[k].color[1] = static_cast<std::uint8_t>(glm::clamp(col.g, 0.0f, 1.0f) * 255.0f + 0.5f);
+            dst[k].color[2] = static_cast<std::uint8_t>(glm::clamp(col.b, 0.0f, 1.0f) * 255.0f + 0.5f);
+            dst[k].color[3] = 255;
+
+            const float angle = timeSeconds * 0.5f;
+            dst[k].angle = glm::packHalf1x16(angle);
+        }
+
+        glUnmapBuffer(GL_ARRAY_BUFFER);
+    }
+    else
+    {
+        std::vector<InstanceDataPacked> scratch(static_cast<size_t>(c));
+
+        for (int k = 0; k < c; ++k)
+        {
+            const Sphere& s = spheres[visible[k]];
+            scratch[k].pos = s.getPosition();
+            scratch[k].scale = glm::packHalf1x16(s.getScale());
+            const glm::vec3 col = s.getColor();
+            scratch[k].color[0] = static_cast<std::uint8_t>(glm::clamp(col.r, 0.0f, 1.0f) * 255.0f + 0.5f);
+            scratch[k].color[1] = static_cast<std::uint8_t>(glm::clamp(col.g, 0.0f, 1.0f) * 255.0f + 0.5f);
+            scratch[k].color[2] = static_cast<std::uint8_t>(glm::clamp(col.b, 0.0f, 1.0f) * 255.0f + 0.5f);
+            scratch[k].color[3] = 255;
+            scratch[k].angle = glm::packHalf1x16(timeSeconds * 0.5f);
         }
 
         glBufferSubData(GL_ARRAY_BUFFER, 0, byteSize, scratch.data());
