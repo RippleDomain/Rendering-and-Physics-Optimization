@@ -5,16 +5,16 @@
 #include <vector>
 
 //A simple UV-sphere that owns its GL buffers and can draw itself.
-class Sphere
+class SceneSphere
 {
 public:
     //XSegments = longitude, YSegments = latitude
-    Sphere(unsigned XSegments = 24, unsigned YSegments = 24, const glm::vec3& getPosition = glm::vec3(0.0f), float getScale = 0.25f);
+    SceneSphere(unsigned XSegments = 24, unsigned YSegments = 24, const glm::vec3& getPosition = glm::vec3(0.0f), float getScale = 0.25f);
 
-    Sphere(const Sphere&) = delete;
-    Sphere& operator=(const Sphere&) = delete;
-    Sphere(Sphere&&) noexcept;
-    Sphere& operator=(Sphere&&) noexcept;
+    SceneSphere(const SceneSphere&) = delete;
+    SceneSphere& operator=(const SceneSphere&) = delete;
+    SceneSphere(SceneSphere&&) noexcept;
+    SceneSphere& operator=(SceneSphere&&) noexcept;
 
     const glm::vec3& getPosition() const { return position; }
     float getScale() const { return scale; }
@@ -27,7 +27,7 @@ public:
     void setVelocity(const glm::vec3& v) { velocity = v; }
 
     void applyGravity(const glm::vec3& acceleration, float dt);
-    void collide(Sphere& other, float restitution);
+    void collide(SceneSphere& other, float restitution);
 
     glm::mat4 modelMatrix(float dt) const;
 

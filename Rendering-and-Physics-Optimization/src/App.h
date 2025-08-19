@@ -3,11 +3,11 @@
 #include "AppConfig.h"
 #include "utils/OpenGLWindow.h"
 #include "utils/ShaderLoader.h"
-#include "Box.h"
-#include "Sphere.h"
-#include "Camera.h"
-#include "Frustum.h"
+#include "SceneBox.h"
+#include "SceneSphere.h"
+#include "SceneCamera.h"
 #include "SphereInstance.h"
+#include "Frustum.h"
 
 #include <vector>
 #include <string>
@@ -25,14 +25,14 @@ private:
     ShaderLoader instancedShader;
     ShaderLoader wireShader;
 
-    std::vector<Sphere> spheres;
+    std::vector<SceneSphere> spheres;
 
     SphereInstance instance;
     std::vector<int> visibleIndices;
     int lastVisibleCount = 0;
 
-    Box cage{ glm::vec3(-40.f, -10.f, -10.f), glm::vec3(40.f, 10.f, 10.f) };
-    Camera camera{ glm::vec3(0.873736382f, 5.155540886f, 50.8167648f) };
+    SceneBox cage{ glm::vec3(-40.f, -10.f, -10.f), glm::vec3(40.f, 10.f, 10.f) };
+    SceneCamera camera{ glm::vec3(0.873736382f, 5.155540886f, 50.8167648f) };
 
     int N = INSTANCE_COUNT;
 

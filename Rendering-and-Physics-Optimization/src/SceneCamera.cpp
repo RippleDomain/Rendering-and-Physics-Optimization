@@ -1,13 +1,14 @@
-#include "Camera.h"
+#include "SceneCamera.h"
+
 #include <gtc/matrix_transform.hpp>
 #include <algorithm>
 
-Camera::Camera(const glm::vec3& position, float yawDegree, float pitchDegree) : position(position), yaw(yawDegree), pitch(pitchDegree) 
+SceneCamera::SceneCamera(const glm::vec3& position, float yawDegree, float pitchDegree) : position(position), yaw(yawDegree), pitch(pitchDegree) 
 {
     updateVectors();
 }
 
-void Camera::update(GLFWwindow* window, float dt) 
+void SceneCamera::update(GLFWwindow* window, float dt) 
 {
     if (!window) return;
 
@@ -47,12 +48,12 @@ void Camera::update(GLFWwindow* window, float dt)
     if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) position -= worldUp * speed;
 }
 
-glm::mat4 Camera::viewMatrix() const 
+glm::mat4 SceneCamera::viewMatrix() const 
 {
     return glm::lookAt(position, position + front, up);
 }
 
-void Camera::updateVectors() 
+void SceneCamera::updateVectors() 
 {
     float cosYaw = glm::cos(glm::radians(yaw));
     float sinYaw = glm::sin(glm::radians(yaw));

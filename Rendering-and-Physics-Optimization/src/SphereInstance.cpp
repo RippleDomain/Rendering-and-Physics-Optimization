@@ -1,5 +1,5 @@
 #include "SphereInstance.h"
-#include "Sphere.h"
+#include "SceneSphere.h"
 
 #include <gtc/type_ptr.hpp>
 #include <gtc/packing.hpp>
@@ -144,7 +144,7 @@ void SphereInstance::setupInstanceAttribs()
     glBindVertexArray(0);
 }
 
-void SphereInstance::updateInstances(const std::vector<Sphere>& spheres, int count, float timeSeconds)
+void SphereInstance::updateInstances(const std::vector<SceneSphere>& spheres, int count, float timeSeconds)
 {
     const GLsizeiptr byteSize = static_cast<GLsizeiptr>(count) * static_cast<GLsizeiptr>(sizeof(InstanceDataPacked));
     glBindBuffer(GL_ARRAY_BUFFER, instanceVertexBuffer);
@@ -195,7 +195,7 @@ void SphereInstance::updateInstances(const std::vector<Sphere>& spheres, int cou
     }
 }
 
-void SphereInstance::updateInstancesFiltered(const std::vector<Sphere>& spheres, const std::vector<int>& visible, int count, float timeSeconds)
+void SphereInstance::updateInstancesFiltered(const std::vector<SceneSphere>& spheres, const std::vector<int>& visible, int count, float timeSeconds)
 {
     const int c = std::min<int>(count, (int)visible.size());
     const GLsizeiptr byteSize = static_cast<GLsizeiptr>(c) * static_cast<GLsizeiptr>(sizeof(InstanceDataPacked));
@@ -208,7 +208,7 @@ void SphereInstance::updateInstancesFiltered(const std::vector<Sphere>& spheres,
     {
         for (int k = 0; k < c; ++k)
         {
-            const Sphere& s = spheres[visible[k]];
+            const SceneSphere& s = spheres[visible[k]];
             const glm::vec3 p = s.getPosition();
             const float     sc = s.getScale();
             const glm::vec3 col = s.getColor();
@@ -232,7 +232,7 @@ void SphereInstance::updateInstancesFiltered(const std::vector<Sphere>& spheres,
 
         for (int k = 0; k < c; ++k)
         {
-            const Sphere& s = spheres[visible[k]];
+            const SceneSphere& s = spheres[visible[k]];
             scratch[k].pos = s.getPosition();
             scratch[k].scale = glm::packHalf1x16(s.getScale());
             const glm::vec3 col = s.getColor();

@@ -157,27 +157,27 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\App.cpp" />
-    <ClCompile Include="src\Camera.cpp" />
+    <ClCompile Include="src\SceneCamera.cpp" />
     <ClCompile Include="src\Frustum.cpp" />
-    <ClCompile Include="src\Sphere.cpp" />
-    <ClCompile Include="src\Box.cpp" />
+    <ClCompile Include="src\SceneSphere.cpp" />
+    <ClCompile Include="src\SceneBox.cpp" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\SphereInstance.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\App.h" />
-    <ClInclude Include="src\Camera.h" />
+    <ClInclude Include="src\SceneCamera.h" />
     <ClInclude Include="src\AppConfig.h" />
     <ClInclude Include="src\Frustum.h" />
-    <ClInclude Include="src\Sphere.h" />
+    <ClInclude Include="src\SceneSphere.h" />
     <ClInclude Include="external\include\glad\glad\glad.h" />
     <ClInclude Include="external\include\glad\include\glad\glad.h" />
     <ClInclude Include="external\include\glad\include\KHR\khrplatform.h" />
     <ClInclude Include="external\include\glad\KHR\khrplatform.h" />
     <ClInclude Include="external\include\glfw\glfw3.h" />
     <ClInclude Include="external\include\glfw\glfw3native.h" />
-    <ClInclude Include="src\Box.h" />
+    <ClInclude Include="src\SceneBox.h" />
     <ClInclude Include="src\utils\OpenGLWindow.h" />
     <ClInclude Include="src\utils\ShaderLoader.h" />
     <ClInclude Include="src\SphereInstance.h" />

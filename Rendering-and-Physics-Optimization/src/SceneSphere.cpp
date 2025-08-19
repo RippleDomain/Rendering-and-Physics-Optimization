@@ -1,4 +1,4 @@
-#include "Sphere.h"
+#include "SceneSphere.h"
 
 #include <gtc/matrix_transform.hpp>
 #include <gtc/packing.hpp>
@@ -18,7 +18,7 @@ namespace
     std::uniform_real_distribution<float> colorDist(0.1f, 1.0f);
 }
 
-Sphere::Sphere(unsigned XSegments, unsigned YSegments, const glm::vec3& getPosition, float getScale) : position(getPosition), scale(getScale)
+SceneSphere::SceneSphere(unsigned XSegments, unsigned YSegments, const glm::vec3& getPosition, float getScale) : position(getPosition), scale(getScale)
 {
     color = glm::vec3(colorDist(colorRNG()), colorDist(colorRNG()), colorDist(colorRNG()));
     mass = scale * scale * scale;
@@ -27,7 +27,7 @@ Sphere::Sphere(unsigned XSegments, unsigned YSegments, const glm::vec3& getPosit
     (void)YSegments;
 }
 
-Sphere::Sphere(Sphere&& other) noexcept
+SceneSphere::SceneSphere(SceneSphere&& other) noexcept
 {
     position = other.position;
     scale = other.scale;
@@ -37,7 +37,7 @@ Sphere::Sphere(Sphere&& other) noexcept
     mass = other.mass;
 }
 
-Sphere& Sphere::operator=(Sphere&& other) noexcept
+SceneSphere& SceneSphere::operator=(SceneSphere&& other) noexcept
 {
     if (this == &other) return *this;
 
@@ -51,12 +51,12 @@ Sphere& Sphere::operator=(Sphere&& other) noexcept
     return *this;
 }
 
-void Sphere::build(unsigned XSegments, unsigned YSegments)
+void SceneSphere::build(unsigned XSegments, unsigned YSegments)
 {
     (void)XSegments; (void)YSegments;
 }
 
-glm::mat4 Sphere::modelMatrix(float dt) const
+glm::mat4 SceneSphere::modelMatrix(float dt) const
 {
     glm::mat4 M(1.0f);
 
@@ -67,13 +67,13 @@ glm::mat4 Sphere::modelMatrix(float dt) const
     return M;
 }
 
-void Sphere::applyGravity(const glm::vec3& acceleration, float dt)
+void SceneSphere::applyGravity(const glm::vec3& acceleration, float dt)
 {
     velocity += acceleration * dt;
     position += velocity * dt;
 }
 
-void Sphere::collide(Sphere& other, float restitution)
+void SceneSphere::collide(SceneSphere& other, float restitution)
 {
     glm::vec3 d = position - other.position;
     float dist2 = glm::dot(d, d);

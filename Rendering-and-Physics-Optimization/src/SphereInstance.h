@@ -4,7 +4,7 @@
 #include <glm.hpp>
 #include <vector>
 
-class Sphere;
+class SceneSphere;
 
 class SphereInstance
 {
@@ -15,8 +15,8 @@ public:
     SphereInstance(const SphereInstance&) = delete;
     SphereInstance& operator=(const SphereInstance&) = delete;
 
-    void updateInstances(const std::vector<Sphere>& spheres, int count, float timeSeconds);
-    void updateInstancesFiltered(const std::vector<Sphere>& spheres, const std::vector<int>& visible, int count, float timeSeconds);
+    void updateInstances(const std::vector<SceneSphere>& spheres, int count, float timeSeconds);
+    void updateInstancesFiltered(const std::vector<SceneSphere>& spheres, const std::vector<int>& visible, int count, float timeSeconds);
     void draw(GLsizei count) const;
 
 private:
