@@ -1,13 +1,14 @@
 #pragma once
 
 #include "AppConfig.h"
-#include "utils/OpenGLWindow.h"
-#include "utils/ShaderLoader.h"
-#include "SceneBox.h"
-#include "SceneSphere.h"
-#include "SceneCamera.h"
-#include "SphereInstance.h"
-#include "Frustum.h"
+#include "../utils/OpenGLWindow.h"
+#include "../utils/ShaderLoader.h"
+#include "../scene/Box.h"
+#include "../scene/Sphere.h"
+#include "../scene/Camera.h"
+#include "../optimization/Instance.h"
+#include "../optimization/Frustum.h"
+#include "../optimization/UniformGrid.h"
 
 #include <vector>
 #include <string>
@@ -25,14 +26,14 @@ private:
     ShaderLoader instancedShader;
     ShaderLoader wireShader;
 
-    std::vector<SceneSphere> spheres;
+    std::vector<Sphere> spheres;
 
-    SphereInstance instance;
+    Instance instance;
     std::vector<int> visibleIndices;
     int lastVisibleCount = 0;
 
-    SceneBox cage{ glm::vec3(-40.f, -10.f, -10.f), glm::vec3(40.f, 10.f, 10.f) };
-    SceneCamera camera{ glm::vec3(0.873736382f, 5.155540886f, 50.8167648f) };
+    Box cage{ glm::vec3(-40.f, -20.f, -25.f), glm::vec3(40.f, 20.f, 25.f) };
+    Camera camera{ glm::vec3(0.873736382f, 5.155540886f, 50.8167648f) };
 
     int N = INSTANCE_COUNT;
 
@@ -51,4 +52,6 @@ private:
     unsigned int frameCounter = 0;
 
     static int cachedW, cachedH;
+
+    UniformGrid grid;
 };

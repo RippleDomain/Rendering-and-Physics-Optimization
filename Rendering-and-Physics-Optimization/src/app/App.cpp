@@ -18,8 +18,10 @@ App::App()
     glfwSetInputMode(window.handle(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     const float sphereRadius = 0.25f;
-    const glm::vec3 BOX_MIN(-40.f, -10.f, -10.f);
-    const glm::vec3 BOX_MAX(40.f, 10.f, 10.f);
+    const glm::vec3 BOX_MIN(-40.f, -20.f, -25.f);
+    const glm::vec3 BOX_MAX(40.f, 20.f, 25.f);
+
+    grid.resize(BOX_MIN, BOX_MAX, sphereRadius * 2.0f);
 
     glLineWidth(1.5f);
 
@@ -107,15 +109,18 @@ int App::run()
                     cage.resolveCollision(spheres[i], restitutionWall);
                 }
 
+                grid.clear(N);
+                for (int i = 0; i < N; ++i)
+                {
+                    grid.insert(i, spheres[i].getPosition(), spheres[i].getScale());
+                }
+
                 for (int iter = 0; iter < 2; ++iter)
                 {
-                    for (int i = 0; i < N; ++i)
-                    {
-                        for (int j = i + 1; j < N; ++j)
+                    grid.forEachPotentialPair([&](int a, int b)
                         {
-                            spheres[i].collide(spheres[j], restitutionSphere);
-                        }
-                    }
+                            spheres[a].collide(spheres[b], restitutionSphere);
+                        });
                 }
 
                 physicsAccumulator -= physicsDt;
@@ -123,7 +128,6 @@ int App::run()
             }
             //--PHYSICS-UPDATE-STAGE-END--
 #endif
-
             int w, h;
             window.getFramebufferSize(w, h);
 

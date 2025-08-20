@@ -3,10 +3,10 @@
 #include <glm.hpp>
 #include <GLFW/glfw3.h>
 
-class SceneCamera 
+class Camera 
 {
 public:
-    SceneCamera(const glm::vec3& position = glm::vec3(0.f, 0.f, 6.f), float yawDegree = -90.f, float pitchDegree = 0.f);
+    Camera(const glm::vec3& position = glm::vec3(0.f, 0.f, 6.f), float yawDegree = -90.f, float pitchDegree = 0.f);
 
     void update(GLFWwindow* window, float dt);
 

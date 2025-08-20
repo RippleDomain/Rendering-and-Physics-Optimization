@@ -1,4 +1,4 @@
-#include "SceneSphere.h"
+#include "Sphere.h"
 
 #include <gtc/matrix_transform.hpp>
 #include <gtc/packing.hpp>
@@ -18,7 +18,7 @@ namespace
     std::uniform_real_distribution<float> colorDist(0.1f, 1.0f);
 }
 
-SceneSphere::SceneSphere(unsigned XSegments, unsigned YSegments, const glm::vec3& getPosition, float getScale) : position(getPosition), scale(getScale)
+Sphere::Sphere(unsigned XSegments, unsigned YSegments, const glm::vec3& getPosition, float getScale) : position(getPosition), scale(getScale)
 {
     color = glm::vec3(colorDist(colorRNG()), colorDist(colorRNG()), colorDist(colorRNG()));
     mass = scale * scale * scale;
@@ -27,7 +27,7 @@ SceneSphere::SceneSphere(unsigned XSegments, unsigned YSegments, const glm::vec3
     (void)YSegments;
 }
 
-SceneSphere::SceneSphere(SceneSphere&& other) noexcept
+Sphere::Sphere(Sphere&& other) noexcept
 {
     position = other.position;
     scale = other.scale;
@@ -37,7 +37,7 @@ SceneSphere::SceneSphere(SceneSphere&& other) noexcept
     mass = other.mass;
 }
 
-SceneSphere& SceneSphere::operator=(SceneSphere&& other) noexcept
+Sphere& Sphere::operator=(Sphere&& other) noexcept
 {
     if (this == &other) return *this;
 
@@ -51,12 +51,12 @@ SceneSphere& SceneSphere::operator=(SceneSphere&& other) noexcept
     return *this;
 }
 
-void SceneSphere::build(unsigned XSegments, unsigned YSegments)
+void Sphere::build(unsigned XSegments, unsigned YSegments)
 {
     (void)XSegments; (void)YSegments;
 }
 
-glm::mat4 SceneSphere::modelMatrix(float dt) const
+glm::mat4 Sphere::modelMatrix(float dt) const
 {
     glm::mat4 M(1.0f);
 
@@ -67,13 +67,13 @@ glm::mat4 SceneSphere::modelMatrix(float dt) const
     return M;
 }
 
-void SceneSphere::applyGravity(const glm::vec3& acceleration, float dt)
+void Sphere::applyGravity(const glm::vec3& acceleration, float dt)
 {
     velocity += acceleration * dt;
     position += velocity * dt;
 }
 
-void SceneSphere::collide(SceneSphere& other, float restitution)
+void Sphere::collide(Sphere& other, float restitution)
 {
     glm::vec3 d = position - other.position;
     float dist2 = glm::dot(d, d);
@@ -103,6 +103,6 @@ void SceneSphere::collide(SceneSphere& other, float restitution)
     j /= (invA + invB);
 
     glm::vec3 impulse = j * n;
-    velocity += impulse * invA * 1.0001f; //1.0001f multiplier in order to move the spheres around more.
-    other.velocity -= impulse * invB * 1.0001f; //1.0001f multiplier in order to move the spheres around more.
+    velocity += impulse * invA * 1.0f;
+    other.velocity -= impulse * invB * 1.0f;
 }

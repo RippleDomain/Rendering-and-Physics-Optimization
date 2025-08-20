@@ -1,5 +1,5 @@
-#include "SphereInstance.h"
-#include "SceneSphere.h"
+#include "Instance.h"
+#include "../scene/Sphere.h"
 
 #include <gtc/type_ptr.hpp>
 #include <gtc/packing.hpp>
@@ -23,7 +23,7 @@ namespace
 }
 //--INSTANCE-DATA-PACKED-END--
 
-SphereInstance::SphereInstance(unsigned XSegments, unsigned YSegments, int maxInstances)
+Instance::Instance(unsigned XSegments, unsigned YSegments, int maxInstances)
 {
     capacity = maxInstances;
     buildMesh(XSegments, YSegments);
@@ -41,7 +41,7 @@ SphereInstance::SphereInstance(unsigned XSegments, unsigned YSegments, int maxIn
     glBindVertexArray(0);
 }
 
-SphereInstance::~SphereInstance()
+Instance::~Instance()
 {
     if (instanceVertexBuffer) glDeleteBuffers(1, &instanceVertexBuffer);
     if (elementBuffer)  glDeleteBuffers(1, &elementBuffer);
@@ -49,7 +49,7 @@ SphereInstance::~SphereInstance()
     if (vertexArray)  glDeleteVertexArrays(1, &vertexArray);
 }
 
-void SphereInstance::buildMesh(unsigned XSegments, unsigned YSegments)
+void Instance::buildMesh(unsigned XSegments, unsigned YSegments)
 {
     struct VtxPN {
         float px, py, pz;
@@ -118,7 +118,7 @@ void SphereInstance::buildMesh(unsigned XSegments, unsigned YSegments)
     glBindVertexArray(0);
 }
 
-void SphereInstance::setupInstanceAttribs()
+void Instance::setupInstanceAttribs()
 {
     glBindVertexArray(vertexArray);
     glBindBuffer(GL_ARRAY_BUFFER, instanceVertexBuffer);
@@ -144,7 +144,7 @@ void SphereInstance::setupInstanceAttribs()
     glBindVertexArray(0);
 }
 
-void SphereInstance::updateInstances(const std::vector<SceneSphere>& spheres, int count, float timeSeconds)
+void Instance::updateInstances(const std::vector<Sphere>& spheres, int count, float timeSeconds)
 {
     const GLsizeiptr byteSize = static_cast<GLsizeiptr>(count) * static_cast<GLsizeiptr>(sizeof(InstanceDataPacked));
     glBindBuffer(GL_ARRAY_BUFFER, instanceVertexBuffer);
@@ -195,7 +195,7 @@ void SphereInstance::updateInstances(const std::vector<SceneSphere>& spheres, in
     }
 }
 
-void SphereInstance::updateInstancesFiltered(const std::vector<SceneSphere>& spheres, const std::vector<int>& visible, int count, float timeSeconds)
+void Instance::updateInstancesFiltered(const std::vector<Sphere>& spheres, const std::vector<int>& visible, int count, float timeSeconds)
 {
     const int c = std::min<int>(count, (int)visible.size());
     const GLsizeiptr byteSize = static_cast<GLsizeiptr>(c) * static_cast<GLsizeiptr>(sizeof(InstanceDataPacked));
@@ -208,7 +208,7 @@ void SphereInstance::updateInstancesFiltered(const std::vector<SceneSphere>& sph
     {
         for (int k = 0; k < c; ++k)
         {
-            const SceneSphere& s = spheres[visible[k]];
+            const Sphere& s = spheres[visible[k]];
             const glm::vec3 p = s.getPosition();
             const float     sc = s.getScale();
             const glm::vec3 col = s.getColor();
@@ -232,7 +232,7 @@ void SphereInstance::updateInstancesFiltered(const std::vector<SceneSphere>& sph
 
         for (int k = 0; k < c; ++k)
         {
-            const SceneSphere& s = spheres[visible[k]];
+            const Sphere& s = spheres[visible[k]];
             scratch[k].pos = s.getPosition();
             scratch[k].scale = glm::packHalf1x16(s.getScale());
             const glm::vec3 col = s.getColor();
@@ -247,7 +247,7 @@ void SphereInstance::updateInstancesFiltered(const std::vector<SceneSphere>& sph
     }
 }
 
-void SphereInstance::draw(GLsizei count) const
+void Instance::draw(GLsizei count) const
 {
     glBindVertexArray(vertexArray);
     glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, 0, count);

@@ -1,9 +1,9 @@
-#include "SceneBox.h"
-#include "SceneSphere.h"
+#include "Box.h"
+#include "Sphere.h"
 
 #include <cstdint>
 
-SceneBox::SceneBox(const glm::vec3& boxMin, const glm::vec3& boxMax)
+Box::Box(const glm::vec3& boxMin, const glm::vec3& boxMax)
 {
     min = boxMin;
     max = boxMax;
@@ -42,14 +42,14 @@ SceneBox::SceneBox(const glm::vec3& boxMin, const glm::vec3& boxMax)
     glBindVertexArray(0);
 }
 
-SceneBox::~SceneBox()
+Box::~Box()
 {
     if (elementBuffer) glDeleteBuffers(1, &elementBuffer);
     if (vertexBuffer) glDeleteBuffers(1, &vertexBuffer);
     if (vertexArray) glDeleteVertexArrays(1, &vertexArray);
 }
 
-SceneBox::SceneBox(SceneBox&& o) noexcept
+Box::Box(Box&& o) noexcept
 {
     vertexArray = o.vertexArray;
     o.vertexArray = 0;
@@ -60,7 +60,7 @@ SceneBox::SceneBox(SceneBox&& o) noexcept
     min = o.min; max = o.max;
 }
 
-SceneBox& SceneBox::operator=(SceneBox&& o) noexcept
+Box& Box::operator=(Box&& o) noexcept
 {
     if (this == &o) return *this;
     if (elementBuffer) glDeleteBuffers(1, &elementBuffer);
@@ -79,14 +79,14 @@ SceneBox& SceneBox::operator=(SceneBox&& o) noexcept
     return *this;
 }
 
-void SceneBox::draw() const
+void Box::draw() const
 {
     glBindVertexArray(vertexArray);
     glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }
 
-void SceneBox::resolveCollision(SceneSphere& s, float restitution) const
+void Box::resolveCollision(Sphere& s, float restitution) const
 {
     glm::vec3 p = s.getPosition();
     glm::vec3 v = s.getVelocity();
@@ -106,5 +106,5 @@ void SceneBox::resolveCollision(SceneSphere& s, float restitution) const
     }
 
     s.setPosition(p);
-    s.setVelocity(v * 1.0007f); //1.0007f multiplier in order to move the spheres around more.
+    s.setVelocity(v * 1.0004f); //1.0004f multiplier in order to move the spheres around more.
 }

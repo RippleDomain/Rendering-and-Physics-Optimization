@@ -156,31 +156,33 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\App.cpp" />
-    <ClCompile Include="src\SceneCamera.cpp" />
-    <ClCompile Include="src\Frustum.cpp" />
-    <ClCompile Include="src\SceneSphere.cpp" />
-    <ClCompile Include="src\SceneBox.cpp" />
+    <ClCompile Include="src\app\App.cpp" />
+    <ClCompile Include="src\scene\Camera.cpp" />
+    <ClCompile Include="src\optimization\Frustum.cpp" />
+    <ClCompile Include="src\scene\Sphere.cpp" />
+    <ClCompile Include="src\scene\Box.cpp" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\SphereInstance.cpp" />
+    <ClCompile Include="src\optimization\Instance.cpp" />
+    <ClCompile Include="src\optimization\UniformGrid.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\App.h" />
-    <ClInclude Include="src\SceneCamera.h" />
-    <ClInclude Include="src\AppConfig.h" />
-    <ClInclude Include="src\Frustum.h" />
-    <ClInclude Include="src\SceneSphere.h" />
+    <ClInclude Include="src\app\App.h" />
+    <ClInclude Include="src\scene\Camera.h" />
+    <ClInclude Include="src\app\AppConfig.h" />
+    <ClInclude Include="src\optimization\Frustum.h" />
+    <ClInclude Include="src\scene\Sphere.h" />
     <ClInclude Include="external\include\glad\glad\glad.h" />
     <ClInclude Include="external\include\glad\include\glad\glad.h" />
     <ClInclude Include="external\include\glad\include\KHR\khrplatform.h" />
     <ClInclude Include="external\include\glad\KHR\khrplatform.h" />
     <ClInclude Include="external\include\glfw\glfw3.h" />
     <ClInclude Include="external\include\glfw\glfw3native.h" />
-    <ClInclude Include="src\SceneBox.h" />
+    <ClInclude Include="src\scene\Box.h" />
     <ClInclude Include="src\utils\OpenGLWindow.h" />
     <ClInclude Include="src\utils\ShaderLoader.h" />
-    <ClInclude Include="src\SphereInstance.h" />
+    <ClInclude Include="src\optimization\Instance.h" />
+    <ClInclude Include="src\optimization\UniformGrid.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
