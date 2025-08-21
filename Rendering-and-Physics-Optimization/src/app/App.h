@@ -33,7 +33,7 @@ private:
     int lastVisibleCount = 0;
 
     Box cage{ glm::vec3(-40.f, -20.f, -25.f), glm::vec3(40.f, 20.f, 25.f) };
-    Camera camera{ glm::vec3(0.873736382f, 5.155540886f, 50.8167648f) };
+    Camera camera{ glm::vec3(0.85f, 6.7f, 66.6f), -90.f, -6.f };
 
     int N = INSTANCE_COUNT;
 

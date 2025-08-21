@@ -25,7 +25,9 @@ public:
     GLuint getID() const { return programID; }
 
     void setMat4(const char* name, const glm::mat4& m) const;
+    void setVec2(const char* name, const glm::vec2& v) const;
     void setVec3(const char* name, const glm::vec3& v) const;
+    void setVec4(const char* name, const glm::vec4& v) const;
     void setFloat(const char* name, float value) const;
 
 private:
@@ -141,10 +143,22 @@ inline void ShaderLoader::setMat4(const char* name, const glm::mat4& m) const
     glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(m));
 }
 
+inline void ShaderLoader::setVec2(const char* name, const glm::vec2& v) const
+{
+    GLint loc = glGetUniformLocation(programID, name);
+    glUniform2fv(loc, 1, &v.x);
+}
+
 inline void ShaderLoader::setVec3(const char* name, const glm::vec3& v) const
 {
     GLint loc = glGetUniformLocation(programID, name);
     glUniform3fv(loc, 1, &v.x);
+}
+
+inline void ShaderLoader::setVec4(const char* name, const glm::vec4& v) const
+{
+    GLint loc = glGetUniformLocation(programID, name);
+    glUniform4fv(loc, 1, &v.x);
 }
 
 inline void ShaderLoader::setFloat(const char* name, float v) const
