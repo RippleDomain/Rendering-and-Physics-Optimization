@@ -41,7 +41,7 @@ private:
 
     glm::vec3  position{ 0.0f, 0.0f, 0.0f };
     float      scale{ 0.25f };
-    glm::vec3  color{ 1.0f, 1.0f, 1.0f }; //Randomized in the constructor.
+    glm::vec3  color{ 1.0f, 1.0f, 1.0f }; //Assigned fast in the constructor.
     glm::vec3  velocity{ 0.0f, 0.0f, 0.0f };
     float      mass{ 1.0f };
 };

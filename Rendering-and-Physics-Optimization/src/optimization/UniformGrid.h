@@ -25,7 +25,12 @@ public:
             const int lid = activeLinear[idx];
             int x, y, z;
             unpack(lid, x, y, z);
-            const auto& A = buckets[idx];
+
+            //--LOOKUP-ACTIVE-BUCKET--
+            const int biA = (lid >= 0 && lid < (int)lut.size()) ? lut[lid] : -1;
+            if (biA < 0) continue;
+            const auto& A = buckets[biA];
+            //--LOOKUP-ACTIVE-BUCKET-END--
 
             const int asz = static_cast<int>(A.size());
             for (int i = 0; i < asz; ++i)

@@ -3,6 +3,20 @@
 #include <random>
 #include <iostream>
 
+//--TINY-FAST-RNG--
+namespace 
+{
+    struct FastRNG 
+    {
+        uint32_t s;
+        explicit FastRNG(uint32_t seed) : s(seed ? seed : 1u) {}
+        inline uint32_t u32() { s ^= s << 13; s ^= s >> 17; s ^= s << 5; return s; }
+        inline float f01() { return (float)((u32() >> 8) * (1.0 / 16777215.0)); }
+        inline glm::vec3 f3() { return glm::vec3(f01(), f01(), f01()); }
+    };
+}
+//--TINY-FAST-RNG-END--
+
 int App::cachedW = 0;
 int App::cachedH = 0;
 
@@ -25,18 +39,43 @@ App::App()
 
     glLineWidth(1.5f);
 
-    std::mt19937 rng{ std::random_device{}() };
-    std::uniform_real_distribution<float> dx(BOX_MIN.x + sphereRadius, BOX_MAX.x - sphereRadius);
-    std::uniform_real_distribution<float> dy(BOX_MIN.y + sphereRadius, BOX_MAX.y - sphereRadius);
-    std::uniform_real_distribution<float> dz(BOX_MIN.z + sphereRadius, BOX_MAX.z - sphereRadius);
-
+    //--STRATIFIED-SPAWN--
     spheres.reserve(N);
+
+    const int side = static_cast<int>(std::ceil(std::cbrt(static_cast<double>(N))));
+    const glm::vec3 boxSize = BOX_MAX - BOX_MIN;
+    const glm::vec3 cell = boxSize / static_cast<float>(side);
+    const glm::vec3 clampMin = BOX_MIN + glm::vec3(sphereRadius);
+    const glm::vec3 clampMax = BOX_MAX - glm::vec3(sphereRadius);
+
+    FastRNG frng(0xC001CAFEu);
+    int placed = 0;
+
+    for (int z = 0; z < side && placed < N; ++z)
+    {
+        for (int y = 0; y < side && placed < N; ++y)
+        {
+            for (int x = 0; x < side && placed < N; ++x)
+            {
+                glm::vec3 base = BOX_MIN + (glm::vec3(x, y, z) + glm::vec3(0.5f)) * cell;
+                glm::vec3 jitter = (frng.f3() - glm::vec3(0.5f)) * (cell - glm::vec3(sphereRadius * 2.0f));
+                glm::vec3 pos = glm::clamp(base + jitter, clampMin, clampMax);
+
+                spheres.emplace_back(SPHERE_XSEGS, SPHERE_YSEGS, pos, sphereRadius);
+                ++placed;
+            }
+        }
+    }
+    //--STRATIFIED-SPAWN-END--
+
+    //--GRID-WARMUP--
+    grid.clear(N);
 
     for (int i = 0; i < N; ++i)
     {
-        glm::vec3 pos(dx(rng), dy(rng), dz(rng));
-        spheres.emplace_back(SPHERE_XSEGS, SPHERE_YSEGS, pos, sphereRadius);
+        grid.insert(i, spheres[i].getPosition(), spheres[i].getScale());
     }
+    //--GRID-WARMUP-END--
 
     instance.updateInstances(spheres, N, 0.0f);
     instancedShader.use();
@@ -49,6 +88,22 @@ App::App()
     lastFrameTime = glfwGetTime();
     titleWindowStart = lastFrameTime;
     frameCounter = 0;
+
+    //--GPU-JIT-WARMUP-- (tiny draw so shader JIT/buffer paths settle)
+    {
+        int w, h;
+        window.getFramebufferSize(w, h);
+        glViewport(0, 0, w, h);
+
+        instancedShader.use();
+        instancedShader.setMat4("uVP", glm::mat4(1.0f));
+        instancedShader.setVec3("uCamPos", glm::vec3(0.0f));
+        instancedShader.setFloat("uTime", 0.0f);
+
+        instance.draw(1);
+        glFinish();
+    }
+    //--GPU-JIT-WARMUP-END--
 }
 
 int App::run()

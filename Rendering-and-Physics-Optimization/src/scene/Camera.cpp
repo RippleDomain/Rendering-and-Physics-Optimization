@@ -49,7 +49,7 @@ void Camera::update(GLFWwindow* window, float dt)
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) position -= right * speed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) position += right * speed;
 
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)        position += worldUp * speed;
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) position += worldUp * speed;
     if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) position -= worldUp * speed;
 }
 

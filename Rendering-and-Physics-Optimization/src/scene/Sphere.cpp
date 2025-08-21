@@ -3,24 +3,26 @@
 #include <gtc/matrix_transform.hpp>
 #include <gtc/packing.hpp>
 #include <cmath>
-#include <random>
 #include <algorithm>
 
+//--FAST-RNG-FOR-COLORS-- (tiny, no <random> overhead)
 namespace
 {
-    std::mt19937& colorRNG()
-    {
-        static thread_local std::mt19937 gen{ std::random_device{}() };
-
-        return gen;
-    }
-
-    std::uniform_real_distribution<float> colorDist(0.1f, 1.0f);
+    inline uint32_t xs32(uint32_t& s) { s ^= s << 13; s ^= s >> 17; s ^= s << 5; return s; }
+    inline float u01(uint32_t v) { return (float)((v >> 8) * (1.0 / 16777215.0)); } //24-bit to [0,1)
 }
+//--FAST-RNG-FOR-COLORS-END--
 
 Sphere::Sphere(unsigned XSegments, unsigned YSegments, const glm::vec3& getPosition, float getScale) : position(getPosition), scale(getScale)
 {
-    color = glm::vec3(colorDist(colorRNG()), colorDist(colorRNG()), colorDist(colorRNG()));
+    //--FAST-COLOR--
+    uint32_t seed = 0x9E3779B9u ^ (uint32_t)(uintptr_t)this;
+    float r = 0.1f + 0.9f * u01(xs32(seed));
+    float g = 0.1f + 0.9f * u01(xs32(seed));
+    float b = 0.1f + 0.9f * u01(xs32(seed));
+    color = glm::vec3(r, g, b);
+    //--FAST-COLOR-END--
+
     mass = scale * scale * scale;
 
     (void)XSegments;
@@ -103,6 +105,6 @@ void Sphere::collide(Sphere& other, float restitution)
     j /= (invA + invB);
 
     glm::vec3 impulse = j * n;
-    velocity += impulse * invA * 1.0f;
-    other.velocity -= impulse * invB * 1.0f;
+    velocity += impulse * invA * 1.1f;
+    other.velocity -= impulse * invB * 1.1f;
 }
