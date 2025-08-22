@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ThreadSystem.h"
+
 #include <glm.hpp>
 #include <vector>
 
@@ -70,6 +72,61 @@ public:
                 }
             }
         }
+    }
+
+    template<typename Fn>
+    void forEachPotentialPairParallel(ThreadSystem& tasks, Fn&& fn) const
+    {
+        if (dims.x <= 0 || dims.y <= 0 || dims.z <= 0) return;
+
+        const int nActive = static_cast<int>(activeLinear.size());
+        tasks.parallel_for(0, nActive, 64, [&](int begin, int end, int)
+            {
+                for (int idx = begin; idx < end; ++idx)
+                {
+                    const int lid = activeLinear[idx];
+                    int x, y, z;
+                    unpack(lid, x, y, z);
+
+                    const int abi = lut[lid];
+                    if (abi < 0) continue;
+                    const auto& A = buckets[abi];
+
+                    const int asz = static_cast<int>(A.size());
+                    for (int i = 0; i < asz; ++i)
+                        for (int j = i + 1; j < asz; ++j)
+                            fn(A[i], A[j]);
+
+                    for (int dx = 0; dx <= 1; ++dx)
+                    {
+                        for (int dy = -1; dy <= 1; ++dy)
+                        {
+                            for (int dz = -1; dz <= 1; ++dz)
+                            {
+                                if (dx == 0)
+                                {
+                                    if (dy < 0) continue;
+                                    if (dy == 0 && dz <= 0) continue;
+                                }
+
+                                const int nx = x + dx;
+                                const int ny = y + dy;
+                                const int nz = z + dz;
+                                if (nx < 0 || ny < 0 || nz < 0 || nx >= dims.x || ny >= dims.y || nz >= dims.z) continue;
+
+                                const int nLid = index(nx, ny, nz);
+                                const int bi = (nLid >= 0 && nLid < (int)lut.size()) ? lut[nLid] : -1;
+                                if (bi < 0) continue;
+
+                                const auto& B = buckets[bi];
+                                for (int a : A)
+                                    for (int b : B)
+                                        fn(a, b);
+                            }
+                        }
+                    }
+                }
+            });
     }
 
     const std::vector<int>& nearWall() const { return nearWallList; }

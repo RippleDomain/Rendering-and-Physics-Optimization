@@ -9,6 +9,7 @@
 #include "../optimization/Instance.h"
 #include "../optimization/Frustum.h"
 #include "../optimization/UniformGrid.h"
+#include "../optimization/ThreadSystem.h"
 
 #include <vector>
 #include <string>

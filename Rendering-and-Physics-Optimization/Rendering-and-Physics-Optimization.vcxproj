@@ -157,6 +157,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\app\App.cpp" />
+    <ClCompile Include="src\optimization\ThreadSystem.h" />
     <ClCompile Include="src\scene\Camera.cpp" />
     <ClCompile Include="src\optimization\Frustum.cpp" />
     <ClCompile Include="src\scene\Sphere.cpp" />

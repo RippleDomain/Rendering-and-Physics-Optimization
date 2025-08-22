@@ -104,6 +104,6 @@ void Sphere::collide(Sphere& other, float restitution)
     j /= (invA + invB);
 
     glm::vec3 impulse = j * n;
-    velocity += impulse * invA * 1.1f;
-    other.velocity -= impulse * invB * 1.1f;
+    velocity += impulse * invA * 1.f;
+    other.velocity -= impulse * invB * 1.f;
 }

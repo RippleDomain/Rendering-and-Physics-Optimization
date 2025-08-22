@@ -2,11 +2,14 @@
 
 #include <random>
 #include <iostream>
+#include <thread>
+#include <atomic>
+#include <memory>
 
 //--TINY-FAST-RNG--
-namespace 
+namespace
 {
-    struct FastRNG 
+    struct FastRNG
     {
         uint32_t s;
         explicit FastRNG(uint32_t seed) : s(seed ? seed : 1u) {}
@@ -16,6 +19,27 @@ namespace
     };
 }
 //--TINY-FAST-RNG-END--
+
+//--SPINLOCK-PER-SPHERE--
+struct Spin
+{
+    std::atomic_flag f = ATOMIC_FLAG_INIT;
+    Spin() noexcept = default;
+    Spin(const Spin&) = delete;
+    Spin& operator=(const Spin&) = delete;
+
+    inline void lock() { while (f.test_and_set(std::memory_order_acquire)) {} }
+    inline void unlock() { f.clear(std::memory_order_release); }
+};
+//--SPINLOCK-PER-SPHERE-END--
+
+//--GLOBAL-TASKS+LOCKS--
+namespace
+{
+    ThreadSystem threads(0);
+    std::unique_ptr<Spin[]> sphereLocks;
+}
+//--GLOBAL-TASKS+LOCKS-END--
 
 int App::cachedW = 0;
 int App::cachedH = 0;
@@ -68,9 +92,12 @@ App::App()
     }
     //--STRATIFIED-SPAWN-END--
 
+    //--LOCKS-INIT--
+    sphereLocks.reset(new Spin[N]);
+    //--LOCKS-INIT-END--
+
     //--GRID-WARMUP--
     grid.clear(N);
-
     for (int i = 0; i < N; ++i)
     {
         grid.insert(i, spheres[i].getPosition(), spheres[i].getScale());
@@ -149,37 +176,49 @@ int App::run()
 
 #if PHYSICS
             //--PHYSICS-UPDATE-STAGE--
-            bool didPhysicsStep = false;
-
             physicsAccumulator += dt;
             while (physicsAccumulator >= physicsDt)
             {
-                for (int i = 0; i < N; ++i)
-                {
-                    spheres[i].applyGravity(gravity, physicsDt);
-                }
+                //--APPLY-GRAVITY-- (parallel)
+                threads.parallel_for(0, N, 2048, [&](int i0, int i1, int /*k*/)
+                    {
+                        for (int i = i0; i < i1; ++i)
+                            spheres[i].applyGravity(gravity, physicsDt);
+                    });
+                //--APPLY-GRAVITY-END--
 
-                for (int i = 0; i < N; ++i)
-                {
-                    cage.resolveCollision(spheres[i], restitutionWall);
-                }
+                //--WALL-COLLISIONS-- (parallel)
+                threads.parallel_for(0, N, 2048, [&](int i0, int i1, int /*k*/)
+                    {
+                        for (int i = i0; i < i1; ++i)
+                            cage.resolveCollision(spheres[i], restitutionWall);
+                    });
+                //--WALL-COLLISIONS-END--
 
+                //--GRID-REBUILD-- (sequential; internal datastructures not thread-safe)
                 grid.clear(N);
                 for (int i = 0; i < N; ++i)
-                {
                     grid.insert(i, spheres[i].getPosition(), spheres[i].getScale());
-                }
+                //--GRID-REBUILD-END--
 
+                //--SPHERE-SPHERE-COLLISIONS-- (broadphase parallel, ordered spinlocks in narrowphase)
                 for (int iter = 0; iter < 2; ++iter)
                 {
-                    grid.forEachPotentialPair([&](int a, int b)
+                    grid.forEachPotentialPairParallel(threads, [&](int a, int b)
                         {
+                            int i = a, j = b;
+                            if (i > j) std::swap(i, j);
+
+                            sphereLocks[i].lock();
+                            sphereLocks[j].lock();
                             spheres[a].collide(spheres[b], restitutionSphere);
+                            sphereLocks[j].unlock();
+                            sphereLocks[i].unlock();
                         });
                 }
+                //--SPHERE-SPHERE-COLLISIONS-END--
 
                 physicsAccumulator -= physicsDt;
-                didPhysicsStep = true;
             }
             //--PHYSICS-UPDATE-STAGE-END--
 #endif
@@ -210,18 +249,35 @@ int App::run()
             instancedShader.setVec3("uCamPos", camera.getPosition());
             instancedShader.setFloat("uTime", static_cast<float>(now));
 
+            //--VISIBILITY-CULL-- (parallel fill into chunked buffers, then merge)
             visibleIndices.clear();
 
-            for (int i = 0; i < N; ++i)
-            {
-                const glm::vec3 c = spheres[i].getPosition();
-                const float     r = spheres[i].getScale();
+            const int total = N;
+            const int minGrain = 4096;
+            const int maxChunks = std::max(1, std::min(threads.threadCount(), total / std::max(1, minGrain)));
+            const int chunks = std::max(1, maxChunks);
 
-                if (sphereIntersectsFrustum(frustum, c, r))
+            std::vector<std::vector<int>> visChunks;
+            visChunks.resize(chunks);
+
+            threads.parallel_for(0, total, minGrain, [&](int i0, int i1, int k)
                 {
-                    visibleIndices.push_back(i);
-                }
-            }
+                    auto& out = visChunks[k];
+                    out.reserve(i1 - i0);
+                    for (int i = i0; i < i1; ++i)
+                    {
+                        const glm::vec3 c = spheres[i].getPosition();
+                        const float     r = spheres[i].getScale();
+
+                        if (sphereIntersectsFrustum(frustum, c, r))
+                            out.push_back(i);
+                    }
+                });
+
+            size_t merged = 0;
+            for (const auto& v : visChunks) merged += v.size();
+            visibleIndices.reserve((int)merged);
+            for (const auto& v : visChunks) visibleIndices.insert(visibleIndices.end(), v.begin(), v.end());
 
             lastVisibleCount = (int)visibleIndices.size();
 
@@ -242,7 +298,6 @@ int App::run()
     catch (const std::exception& e)
     {
         std::cerr << "Error: " << e.what() << '\n';
-
         return -1;
     }
 
