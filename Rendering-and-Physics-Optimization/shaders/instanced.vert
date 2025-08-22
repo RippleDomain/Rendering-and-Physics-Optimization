@@ -14,17 +14,14 @@ out vec3 vNormal;
 out vec3 vWorldPos;
 out vec3 vBaseColor;
 
-mat3 rotY(float a){ float c=cos(a), s=sin(a); return mat3(c,0,s, 0,1,0, -s,0,c); }
-
 void main()
 {
-    vec3  N0    = normalize(aNormalPacked.xyz);
-    mat3  R     = rotY(iAngle);
-    vec3  local = aPos * iScale;
-    vec3  world = iPos + R * local;
+    vec3 N0    = normalize(aNormalPacked.xyz);
+    vec3 local = aPos * iScale;
+    vec3 world = iPos + local;
 
     vWorldPos  = world;
-    vNormal    = normalize(R * N0);
+    vNormal    = N0;
     vBaseColor = iColorUNorm.rgb;
 
     gl_Position = uVP * vec4(world, 1.0);

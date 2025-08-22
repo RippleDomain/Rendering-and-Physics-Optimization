@@ -27,9 +27,9 @@ public:
             unpack(lid, x, y, z);
 
             //--LOOKUP-ACTIVE-BUCKET--
-            const int biA = (lid >= 0 && lid < (int)lut.size()) ? lut[lid] : -1;
-            if (biA < 0) continue;
-            const auto& A = buckets[biA];
+            const int abi = lut[lid];
+            if (abi < 0) continue;
+            const auto& A = buckets[abi];
             //--LOOKUP-ACTIVE-BUCKET-END--
 
             const int asz = static_cast<int>(A.size());

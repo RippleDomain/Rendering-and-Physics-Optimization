@@ -63,7 +63,6 @@ glm::mat4 Sphere::modelMatrix(float dt) const
     glm::mat4 M(1.0f);
 
     M = glm::translate(M, position);
-    M = glm::rotate(M, dt * 0.5f, glm::vec3(0, 1, 0));
     M = glm::scale(M, glm::vec3(scale));
 
     return M;

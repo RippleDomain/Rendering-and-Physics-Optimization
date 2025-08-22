@@ -7,5 +7,5 @@
 //--TUNABLES--
 static constexpr int SPHERE_XSEGS = 24;
 static constexpr int SPHERE_YSEGS = 24;
-static constexpr int INSTANCE_COUNT = 22000;
+static constexpr int INSTANCE_COUNT = 23000;
 //--TUNABLES-END--

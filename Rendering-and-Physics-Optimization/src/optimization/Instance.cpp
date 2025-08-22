@@ -168,9 +168,7 @@ void Instance::updateInstances(const std::vector<Sphere>& spheres, int count, fl
             dst[i].color[2] = static_cast<std::uint8_t>(glm::clamp(c.b, 0.0f, 1.0f) * 255.0f + 0.5f);
             dst[i].color[3] = 255;
 
-            const float angle = timeSeconds * 0.5f;
-
-            dst[i].angle = glm::packHalf1x16(angle);
+            dst[i].angle = glm::packHalf1x16(0.0f);
         }
 
         glUnmapBuffer(GL_ARRAY_BUFFER);
@@ -188,7 +186,7 @@ void Instance::updateInstances(const std::vector<Sphere>& spheres, int count, fl
             scratch[i].color[1] = static_cast<std::uint8_t>(glm::clamp(c.g, 0.0f, 1.0f) * 255.0f + 0.5f);
             scratch[i].color[2] = static_cast<std::uint8_t>(glm::clamp(c.b, 0.0f, 1.0f) * 255.0f + 0.5f);
             scratch[i].color[3] = 255;
-            scratch[i].angle = glm::packHalf1x16(timeSeconds * 0.5f);
+            scratch[i].angle = glm::packHalf1x16(0.0f);
         }
 
         glBufferSubData(GL_ARRAY_BUFFER, 0, byteSize, scratch.data());
@@ -220,8 +218,7 @@ void Instance::updateInstancesFiltered(const std::vector<Sphere>& spheres, const
             dst[k].color[2] = static_cast<std::uint8_t>(glm::clamp(col.b, 0.0f, 1.0f) * 255.0f + 0.5f);
             dst[k].color[3] = 255;
 
-            const float angle = timeSeconds * 0.5f;
-            dst[k].angle = glm::packHalf1x16(angle);
+            dst[k].angle = glm::packHalf1x16(0.0f);
         }
 
         glUnmapBuffer(GL_ARRAY_BUFFER);
@@ -240,7 +237,7 @@ void Instance::updateInstancesFiltered(const std::vector<Sphere>& spheres, const
             scratch[k].color[1] = static_cast<std::uint8_t>(glm::clamp(col.g, 0.0f, 1.0f) * 255.0f + 0.5f);
             scratch[k].color[2] = static_cast<std::uint8_t>(glm::clamp(col.b, 0.0f, 1.0f) * 255.0f + 0.5f);
             scratch[k].color[3] = 255;
-            scratch[k].angle = glm::packHalf1x16(timeSeconds * 0.5f);
+            scratch[k].angle = glm::packHalf1x16(0.0f);
         }
 
         glBufferSubData(GL_ARRAY_BUFFER, 0, byteSize, scratch.data());
