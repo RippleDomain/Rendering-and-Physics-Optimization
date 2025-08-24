@@ -3,6 +3,7 @@
 #include "AppConfig.h"
 #include "../utils/OpenGLWindow.h"
 #include "../utils/ShaderLoader.h"
+#include "../utils/HUD.h"
 #include "../scene/Box.h"
 #include "../scene/Sphere.h"
 #include "../scene/Camera.h"
@@ -37,6 +38,9 @@ private:
     Camera camera{ glm::vec3(0.85f, 6.7f, 66.6f), -90.f, -6.f };
 
     int N = INSTANCE_COUNT;
+
+	HUD hud;
+    double fps = 0.0;
 
 #if PHYSICS
     glm::vec3 gravity{ 0.0f, -9.81f, 0.0f };

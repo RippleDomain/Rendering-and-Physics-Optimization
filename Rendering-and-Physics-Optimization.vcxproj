@@ -179,6 +179,7 @@
     <ClInclude Include="external\include\glfw\glfw3.h" />
     <ClInclude Include="external\include\glfw\glfw3native.h" />
     <ClInclude Include="src\scene\Box.h" />
+    <ClInclude Include="src\utils\HUD.h" />
     <ClInclude Include="src\utils\OpenGLWindow.h" />
     <ClInclude Include="src\utils\ShaderLoader.h" />
     <ClInclude Include="src\optimization\Instance.h" />

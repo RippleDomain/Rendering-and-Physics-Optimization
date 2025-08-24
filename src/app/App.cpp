@@ -113,8 +113,6 @@ App::App()
     wireShader.setVec3("uColor", glm::vec3(0.95f, 0.95f, 0.95f));
 
     lastFrameTime = glfwGetTime();
-    titleWindowStart = lastFrameTime;
-    frameCounter = 0;
 
     //--GPU-JIT-WARMUP-- (tiny draw so shader JIT/buffer paths settle)
     {
@@ -139,29 +137,6 @@ int App::run()
     {
         while (!window.shouldClose())
         {
-            //--TITLE-INFO-UPDATE-STAGE--
-            ++frameCounter;
-            const double nowTitle = glfwGetTime();
-            const double elapsed = nowTitle - titleWindowStart;
-
-            if (elapsed >= 0.5)
-            {
-                const double fps = static_cast<double>(frameCounter) / elapsed;
-                const double msPerFrame = (elapsed / static_cast<double>(frameCounter)) * 1000.0;
-
-                std::string title = std::string("Optimization - Ball Count: ")
-                    + std::to_string(N)
-                    + " | Visible: " + std::to_string(lastVisibleCount)
-                    + " | FPS: " + std::to_string(static_cast<int>(fps))
-                    + " | Frame: " + std::to_string(msPerFrame) + " ms";
-
-                glfwSetWindowTitle(window.handle(), title.c_str());
-
-                titleWindowStart = nowTitle;
-                frameCounter = 0;
-            }
-            //--TITLE-INFO-UPDATE-STAGE-END--
-
             if (glfwGetKey(window.handle(), GLFW_KEY_ESCAPE) == GLFW_PRESS)
             {
                 window.requestClose();
@@ -290,6 +265,32 @@ int App::run()
             wireShader.setMat4("uMVP", vp);
             cage.draw();
             //--BOX-DRAWING-STAGE-END--
+
+            //--FPS-UPDATE-STAGE--
+            {
+                static double accTime = 0.0;
+                static unsigned int accFrames = 0;
+                static const double UPDATE_SECS = 1.0;
+
+                accTime += (double)dt;
+                accFrames += 1;
+
+                if (accTime >= UPDATE_SECS)
+                {
+                    fps = (accFrames > 0) ? (double(accFrames) / accTime) : 0.0;
+                    accTime -= UPDATE_SECS;
+                    accFrames = 0;
+                }
+            }
+
+            {
+                char line1[64], line3[64];
+                std::snprintf(line1, sizeof(line1), "FPS %d", (int)std::round(fps));
+                std::snprintf(line3, sizeof(line3), "VIS %d", lastVisibleCount);
+
+                hud.draw(w, h, line1, nullptr, line3);
+            }
+            //--FPS-UPDATE-STAGE-END--
 
             window.swapBuffers();
             window.pollEvents();
