@@ -34,8 +34,8 @@ private:
     std::vector<int> visibleIndices;
     int lastVisibleCount = 0;
 
-    Box cage{ glm::vec3(-40.f, -20.f, -25.f), glm::vec3(40.f, 20.f, 25.f) };
-    Camera camera{ glm::vec3(0.85f, 6.7f, 66.6f), -90.f, -6.f };
+    Box cage{ glm::vec3(-40.f, -20.f, -45.f), glm::vec3(40.f, 20.f, 45.f) };
+    Camera camera{ glm::vec3(0.5f, 6.9f, 85.9f), -90.f, -6.6f };
 
     int N = INSTANCE_COUNT;
 

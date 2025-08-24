@@ -56,8 +56,8 @@ App::App()
     glfwSetInputMode(window.handle(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     const float sphereRadius = 0.25f;
-    const glm::vec3 BOX_MIN(-40.f, -20.f, -25.f);
-    const glm::vec3 BOX_MAX(40.f, 20.f, 25.f);
+    const glm::vec3 BOX_MIN(-40.f, -20.f, -45.f);
+    const glm::vec3 BOX_MAX(40.f, 20.f, 45.f);
 
     grid.resize(BOX_MIN, BOX_MAX, sphereRadius * 2.0f);
 
@@ -209,7 +209,7 @@ int App::run()
             glClearColor(0.08f, 0.10f, 0.12f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            const glm::mat4 proj = glm::perspective(glm::radians(camera.getFOV()), (float)w / (float)h, 0.1f, 100.0f);
+            const glm::mat4 proj = glm::perspective(glm::radians(camera.getFOV()), (float)w / (float)h, 0.5f, 200.0f);
             const glm::mat4 view = camera.viewMatrix();
             const glm::mat4 vp = proj * view;
 
