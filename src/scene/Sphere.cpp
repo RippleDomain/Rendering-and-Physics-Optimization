@@ -104,6 +104,19 @@ void Sphere::collide(Sphere& other, float restitution)
     j /= (invA + invB);
 
     glm::vec3 impulse = j * n;
-    velocity += impulse * invA * 1.0001f; //1.0001f multiplier in order to move the spheres around more.
-    other.velocity -= impulse * invB * 1.0001f; //1.0001f multiplier in order to move the spheres around more.
+    velocity += impulse * invA;
+    other.velocity -= impulse * invB;
+
+    //--TINY-TANGENTIAL-FRICTION--
+    const float mu = 0.02f;
+    glm::vec3 t = rv - n * velAlongNormal;
+    float t2 = glm::dot(t, t);
+
+    if (t2 > 1e-12f)
+    {
+        glm::vec3 tdir = t * (1.0f / std::sqrt(t2));
+        glm::vec3 ft = -mu * j * tdir;
+        velocity += ft * invA;
+        other.velocity -= ft * invB;
+    }
 }

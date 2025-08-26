@@ -151,8 +151,11 @@ int App::run()
 
 #if PHYSICS
             //--PHYSICS-UPDATE-STAGE--
-            physicsAccumulator += dt;
-            while (physicsAccumulator >= physicsDt)
+			physicsAccumulator += dt;
+            int steps = 0;
+            const int MAX_STEPS = 4;
+
+            while (physicsAccumulator >= physicsDt && steps < MAX_STEPS)
             {
                 //--APPLY-GRAVITY-- (parallel)
                 threads.parallel_for(0, N, 2048, [&](int i0, int i1, int /*k*/)
@@ -179,7 +182,11 @@ int App::run()
                 //--SPHERE-SPHERE-COLLISIONS-- (broadphase parallel, ordered spinlocks in narrowphase)
                 for (int iter = 0; iter < 2; ++iter)
                 {
-                    grid.forEachPotentialPairParallel(threads, [&](int a, int b)
+                    grid.forEachPotentialPairPrunedParallel(
+                        threads,
+                        [&](int id) -> const glm::vec3& { return spheres[id].getPosition(); },
+                        [&](int id) -> float { return spheres[id].getScale();     },
+                        [&](int a, int b)
                         {
                             int i = a, j = b;
                             if (i > j) std::swap(i, j);
@@ -194,7 +201,11 @@ int App::run()
                 //--SPHERE-SPHERE-COLLISIONS-END--
 
                 physicsAccumulator -= physicsDt;
+                ++steps;
             }
+
+            const double maxCarry = physicsDt * MAX_STEPS;
+            if (physicsAccumulator > maxCarry) physicsAccumulator = maxCarry;
             //--PHYSICS-UPDATE-STAGE-END--
 #endif
             int w, h;

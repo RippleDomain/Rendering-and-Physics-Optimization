@@ -129,6 +129,142 @@ public:
             });
     }
 
+    //--PRUNED-PAIR-ENUMERATION--
+    template<typename GetPos, typename GetRad, typename Fn>
+    void forEachPotentialPairPrunedParallel(ThreadSystem& tasks, GetPos getPos, GetRad getRad, Fn&& fn) const
+    {
+        if (dims.x <= 0 || dims.y <= 0 || dims.z <= 0) return;
+
+        const int nActive = static_cast<int>(activeLinear.size());
+        const int MIN_GRAIN = 16;
+
+        tasks.parallel_for(0, nActive, MIN_GRAIN, [&](int begin, int end, int)
+            {
+                thread_local std::vector<int> A_sorted;
+                thread_local std::vector<int> B_sorted;
+
+                auto sweepIntra = [&](const std::vector<int>& L)
+                    {
+                        const int m = (int)L.size();
+                        if (m <= 64)
+                        {
+                            for (int i = 0; i < m; ++i)
+                                for (int j = i + 1; j < m; ++j)
+                                    fn(L[i], L[j]);
+                        }
+                        else
+                        {
+                            A_sorted.assign(L.begin(), L.end());
+                            std::sort(A_sorted.begin(), A_sorted.end(),
+                                [&](int ia, int ib) { return getPos(ia).x < getPos(ib).x; });
+
+                            for (int i = 0; i < m; ++i)
+                            {
+                                const int a = A_sorted[i];
+                                const auto pa = getPos(a);
+                                const float ra = getRad(a);
+
+                                for (int j = i + 1; j < m; ++j)
+                                {
+                                    const int b = A_sorted[j];
+                                    if (getPos(b).x - pa.x > (ra + getRad(b))) break;
+                                    fn(a, b);
+                                }
+                            }
+                        }
+                    };
+
+                auto sweepCross = [&](const std::vector<int>& A, const std::vector<int>& B)
+                    {
+                        const int asz = (int)A.size(), bsz = (int)B.size();
+                        if (asz == 0 || bsz == 0) return;
+
+                        if (asz > 64 && bsz > 64)
+                        {
+                            A_sorted.assign(A.begin(), A.end());
+                            B_sorted.assign(B.begin(), B.end());
+                            std::sort(A_sorted.begin(), A_sorted.end(),
+                                [&](int ia, int ib) { return getPos(ia).x < getPos(ib).x; });
+                            std::sort(B_sorted.begin(), B_sorted.end(),
+                                [&](int ia, int ib) { return getPos(ia).x < getPos(ib).x; });
+
+                            int i = 0, j = 0;
+                            while (i < (int)A_sorted.size() && j < (int)B_sorted.size())
+                            {
+                                const int a = A_sorted[i]; const auto pa = getPos(a); const float ra = getRad(a);
+                                const int b = B_sorted[j]; const auto pb = getPos(b); const float rb = getRad(b);
+
+                                if (pa.x + ra < pb.x - rb) { ++i; continue; }
+                                if (pb.x + rb < pa.x - ra) { ++j; continue; }
+
+                                int jj = j;
+                                while (jj < (int)B_sorted.size())
+                                {
+                                    const int bb = B_sorted[jj];
+                                    if (getPos(bb).x - pa.x > (ra + getRad(bb))) break;
+                                    fn(a, bb);
+                                    ++jj;
+                                }
+                                ++i;
+                            }
+                        }
+                        else
+                        {
+                            for (int a : A)
+                            {
+                                const auto pa = getPos(a);
+                                const float ra = getRad(a);
+                                for (int b : B)
+                                {
+                                    if (std::abs(getPos(b).x - pa.x) <= (ra + getRad(b)))
+                                        fn(a, b);
+                                }
+                            }
+                        }
+                    };
+
+                for (int idx = begin; idx < end; ++idx)
+                {
+                    const int lid = activeLinear[idx];
+                    const int abi = lut[lid];
+                    if (abi < 0) continue;
+
+                    int x, y, z;
+                    unpack(lid, x, y, z);
+
+                    const auto& A = buckets[abi];
+
+                    sweepIntra(A);
+
+                    for (int dx = 0; dx <= 1; ++dx)
+                    {
+                        for (int dy = -1; dy <= 1; ++dy)
+                        {
+                            for (int dz = -1; dz <= 1; ++dz)
+                            {
+                                if (dx == 0)
+                                {
+                                    if (dy < 0) continue;
+                                    if (dy == 0 && dz <= 0) continue;
+                                }
+
+                                const int nx = x + dx, ny = y + dy, nz = z + dz;
+                                if (nx < 0 || ny < 0 || nz < 0 || nx >= dims.x || ny >= dims.y || nz >= dims.z) continue;
+
+                                const int nLid = index(nx, ny, nz);
+                                const int bbi = lut[nLid];
+                                if (bbi < 0) continue;
+
+                                const auto& B = buckets[bbi];
+                                sweepCross(A, B);
+                            }
+                        }
+                    }
+                }
+            });
+    }
+    //--PRUNED-PAIR-ENUMERATION-END--
+
     const std::vector<int>& nearWall() const { return nearWallList; }
 
 private:
