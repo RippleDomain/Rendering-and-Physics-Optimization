@@ -53,8 +53,6 @@ private:
     glm::vec3 lightDir = glm::normalize(glm::vec3(-1.0f, -1.0f, -1.0f));
 
     double lastFrameTime = 0.0;
-    double titleWindowStart = 0.0;
-    unsigned int frameCounter = 0;
 
     static int cachedW, cachedH;
 

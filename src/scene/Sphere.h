@@ -1,6 +1,5 @@
 #pragma once
 
-#include <glad/glad.h>
 #include <glm.hpp>
 #include <vector>
 
@@ -33,11 +32,6 @@ public:
 
 private:
     void build(unsigned XSegments, unsigned YSegments);
-
-    GLuint vertexArray{ 0 };
-    GLuint vertexBuffer{ 0 };
-    GLuint elementBuffer{ 0 };
-    GLsizei indexCount{ 0 };
 
     glm::vec3  position{ 0.0f, 0.0f, 0.0f };
     float      scale{ 0.25f };

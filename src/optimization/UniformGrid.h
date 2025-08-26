@@ -61,7 +61,7 @@ public:
                         if (nx < 0 || ny < 0 || nz < 0 || nx >= dims.x || ny >= dims.y || nz >= dims.z) continue;
 
                         const int nLid = index(nx, ny, nz);
-                        const int bi = (nLid >= 0 && nLid < (int)lut.size()) ? lut[nLid] : -1;
+                        const int bi = lut[nLid];
                         if (bi < 0) continue;
 
                         const auto& B = buckets[bi];
@@ -135,6 +135,7 @@ private:
     glm::vec3 bmin{ 0.0f }, bmax{ 0.0f };
     glm::ivec3 dims{ 0, 0, 0 };
     float cellSize = 1.0f;
+    float invCell = 1.0f;
 
     std::vector<int> activeLinear;
     std::vector<std::vector<int>> buckets;

@@ -107,7 +107,7 @@ App::App()
     instance.updateInstances(spheres, N, 0.0f);
     instancedShader.use();
     instancedShader.setVec3("uLightDir", lightDir);
-    visibleIndices.reserve(N);
+    visibleIndices.resize(N);
 
     wireShader.use();
     wireShader.setVec3("uColor", glm::vec3(0.95f, 0.95f, 0.95f));
@@ -209,7 +209,20 @@ int App::run()
             glClearColor(0.08f, 0.10f, 0.12f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            const glm::mat4 proj = glm::perspective(glm::radians(camera.getFOV()), (float)w / (float)h, 0.5f, 200.0f);
+            //--PROJECTION-CACHE--
+            static int lastW = -1, lastH = -1;
+            static float lastFov = -1.0f;
+            static glm::mat4 cachedProj(1.0f);
+
+            const float fovNow = camera.getFOV();
+            if (w != lastW || h != lastH || fovNow != lastFov)
+            {
+                cachedProj = glm::perspective(glm::radians(fovNow), (float)w / (float)h, 0.5f, 200.0f);
+                lastW = w; lastH = h; lastFov = fovNow;
+            }
+            const glm::mat4 proj = cachedProj;
+            //--PROJECTION-CACHE-END--
+
             const glm::mat4 view = camera.viewMatrix();
             const glm::mat4 vp = proj * view;
 
@@ -224,37 +237,47 @@ int App::run()
             instancedShader.setVec3("uCamPos", camera.getPosition());
             instancedShader.setFloat("uTime", static_cast<float>(now));
 
-            //--VISIBILITY-CULL-- (parallel fill into chunked buffers, then merge)
-            visibleIndices.clear();
+            //--VISIBILITY-CULL--
+            if ((int)visibleIndices.size() < N) visibleIndices.resize(N);
 
             const int total = N;
             const int minGrain = 4096;
-            const int maxChunks = std::max(1, std::min(threads.threadCount(), total / std::max(1, minGrain)));
-            const int chunks = std::max(1, maxChunks);
+            const int tcount = threads.threadCount();
+            const int chunks = std::max(1, std::min(tcount, total / std::max(1, minGrain)));
 
-            std::vector<std::vector<int>> visChunks;
-            visChunks.resize(chunks);
+            static std::vector<int> counts;
+            counts.assign(chunks, 0);
 
             threads.parallel_for(0, total, minGrain, [&](int i0, int i1, int k)
                 {
-                    auto& out = visChunks[k];
-                    out.reserve(i1 - i0);
+                    int c = 0;
                     for (int i = i0; i < i1; ++i)
                     {
-                        const glm::vec3 c = spheres[i].getPosition();
-                        const float     r = spheres[i].getScale();
+                        const glm::vec3 cpos = spheres[i].getPosition();
+                        const float     rad = spheres[i].getScale();
+                        c += sphereIntersectsFrustum(frustum, cpos, rad) ? 1 : 0;
+                    }
+                    counts[k] = c;
+                });
 
-                        if (sphereIntersectsFrustum(frustum, c, r))
-                            out.push_back(i);
+            static std::vector<int> offsets;
+            offsets.assign(chunks + 1, 0);
+            for (int k = 0; k < chunks; ++k) offsets[k + 1] = offsets[k] + counts[k];
+
+            threads.parallel_for(0, total, minGrain, [&](int i0, int i1, int k)
+                {
+                    int out = offsets[k];
+                    for (int i = i0; i < i1; ++i)
+                    {
+                        const glm::vec3 cpos = spheres[i].getPosition();
+                        const float     rad = spheres[i].getScale();
+                        if (sphereIntersectsFrustum(frustum, cpos, rad))
+                            visibleIndices[out++] = i;
                     }
                 });
 
-            size_t merged = 0;
-            for (const auto& v : visChunks) merged += v.size();
-            visibleIndices.reserve((int)merged);
-            for (const auto& v : visChunks) visibleIndices.insert(visibleIndices.end(), v.begin(), v.end());
-
-            lastVisibleCount = (int)visibleIndices.size();
+            lastVisibleCount = offsets.back();
+            //--VISIBILITY-CULL-END--
 
             instance.updateInstancesFiltered(spheres, visibleIndices, lastVisibleCount, static_cast<float>(now));
             instance.draw(lastVisibleCount);

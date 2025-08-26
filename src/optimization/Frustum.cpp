@@ -3,8 +3,9 @@
 //--FRUSTUM-PLANES-HELPERS--
 FrustumPlane normalizePlane(FrustumPlane p)
 {
-    float invLen = 1.0f / glm::length(p.n);
-    p.n *= invLen; p.d *= invLen;
+    const float invLen = glm::inversesqrt(glm::dot(p.n, p.n));
+    p.n *= invLen;
+    p.d *= invLen;
 
     return p;
 }

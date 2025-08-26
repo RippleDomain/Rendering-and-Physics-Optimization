@@ -12,6 +12,7 @@ void UniformGrid::resize(const glm::vec3& boxMin, const glm::vec3& boxMax, float
     bmin = boxMin;
     bmax = boxMax;
     cellSize = (cell > 1e-6f) ? cell : 1.0f;
+    invCell = 1.0f / cellSize;
 
     const glm::vec3 extent = bmax - bmin;
     dims.x = std::max(1, static_cast<int>(glm::ceil(extent.x / cellSize)));
@@ -56,8 +57,7 @@ void UniformGrid::clear(int expectedCount)
 
 void UniformGrid::insert(int id, const glm::vec3& pos, float radius)
 {
-    //--INDEX-COMPUTE-- (avoid per-axis divides)
-    const float invCell = 1.0f / cellSize;
+    //--INDEX-COMPUTE--
     const glm::vec3 rel = (pos - bmin) * invCell;
     int ix = static_cast<int>(glm::floor(rel.x));
     int iy = static_cast<int>(glm::floor(rel.y));

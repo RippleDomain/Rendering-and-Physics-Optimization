@@ -150,7 +150,9 @@ void Instance::updateInstances(const std::vector<Sphere>& spheres, int count, fl
     glBindBuffer(GL_ARRAY_BUFFER, instanceVertexBuffer);
     glBufferData(GL_ARRAY_BUFFER, byteSize, nullptr, GL_STREAM_DRAW);
 
-    auto* dst = static_cast<InstanceDataPacked*>(glMapBufferRange(GL_ARRAY_BUFFER, 0, byteSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
+    auto* dst = static_cast<InstanceDataPacked*>(
+        glMapBufferRange(GL_ARRAY_BUFFER, 0, byteSize,
+            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT));
 
     if (dst)
     {
@@ -200,7 +202,9 @@ void Instance::updateInstancesFiltered(const std::vector<Sphere>& spheres, const
 
     glBindBuffer(GL_ARRAY_BUFFER, instanceVertexBuffer);
 
-    auto* dst = static_cast<InstanceDataPacked*>(glMapBufferRange(GL_ARRAY_BUFFER, 0, byteSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
+    auto* dst = static_cast<InstanceDataPacked*>(
+        glMapBufferRange(GL_ARRAY_BUFFER, 0, byteSize,
+            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT));
 
     if (dst)
     {
