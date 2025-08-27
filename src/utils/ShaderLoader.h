@@ -1,3 +1,7 @@
+/*
+    Shader utility: load GLSL from files, compile/link, and set common uniforms.
+*/
+
 #pragma once
 
 #include <glad/glad.h>
@@ -24,7 +28,7 @@ public:
     void use() const;
     GLuint getID() const { return programID; }
 
-    void setMat4(const char* name, const glm::mat4& m) const;
+    void setMat4(const char* name, const glm::mat4& mutex) const;
     void setVec2(const char* name, const glm::vec2& v) const;
     void setVec3(const char* name, const glm::vec3& v) const;
     void setVec4(const char* name, const glm::vec4& v) const;
@@ -38,16 +42,16 @@ private:
     GLuint programID{ 0 };
 };
 
+//--FILE-READ-HELPER--
 static inline std::string readTextFile(const std::string& path)
 {
-    std::ifstream ifs(path, std::ios::in);
-
-    if (!ifs) throw std::runtime_error("Failed to open file: " + path);
-
-    std::ostringstream oss; oss << ifs.rdbuf();
+    std::ifstream stream(path, std::ios::in);
+    if (!stream) throw std::runtime_error("Failed to open file: " + path);
+    std::ostringstream oss; oss << stream.rdbuf();
 
     return oss.str();
 }
+//--FILE-READ-HELPER-END--
 
 inline ShaderLoader::~ShaderLoader()
 {
@@ -71,27 +75,28 @@ inline ShaderLoader& ShaderLoader::operator=(ShaderLoader&& other) noexcept
     return *this;
 }
 
-inline ShaderLoader ShaderLoader::fromFiles(const std::string& vsPath, const std::string& fsPath)
+inline ShaderLoader ShaderLoader::fromFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
 {
-    std::string vsSrc = readTextFile(vsPath);
-    std::string fsSrc = readTextFile(fsPath);
+    std::string vertexShaderSource = readTextFile(vertexShaderPath);
+    std::string fragmentShaderSource = readTextFile(fragmentShaderPath);
 
-    GLuint vertexShader = compile(GL_VERTEX_SHADER, vsSrc, "vertex");
-    GLuint fragmentShader = compile(GL_FRAGMENT_SHADER, fsSrc, "fragment");
-    GLuint prog = link(vertexShader, fragmentShader);
+    GLuint vertexShader = compile(GL_VERTEX_SHADER, vertexShaderSource, "vertex");
+    GLuint fragmentShader = compile(GL_FRAGMENT_SHADER, fragmentShaderSource, "fragment");
+    GLuint program = link(vertexShader, fragmentShader);
 
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    return ShaderLoader(prog);
+    return ShaderLoader(program);
 }
 
+//--SHADER-COMPILE--
 inline GLuint ShaderLoader::compile(GLenum type, const std::string& source, const char* stageName)
 {
     GLuint s = glCreateShader(type);
-    const char* csrc = source.c_str();
+    const char* cSrc = source.c_str();
 
-    glShaderSource(s, 1, &csrc, nullptr);
+    glShaderSource(s, 1, &cSrc, nullptr);
     glCompileShader(s);
 
     GLint ok = 0; glGetShaderiv(s, GL_COMPILE_STATUS, &ok);
@@ -108,7 +113,9 @@ inline GLuint ShaderLoader::compile(GLenum type, const std::string& source, cons
 
     return s;
 }
+//--SHADER-COMPILE-END--
 
+//--PROGRAM-LINK--
 inline GLuint ShaderLoader::link(GLuint vertexShader, GLuint fragmentShader)
 {
     GLuint p = glCreateProgram();
@@ -131,38 +138,39 @@ inline GLuint ShaderLoader::link(GLuint vertexShader, GLuint fragmentShader)
 
     return p;
 }
+//--PROGRAM-LINK-END--
 
 inline void ShaderLoader::use() const
 {
     glUseProgram(programID);
 }
 
-inline void ShaderLoader::setMat4(const char* name, const glm::mat4& m) const
+inline void ShaderLoader::setMat4(const char* name, const glm::mat4& mutex) const
 {
-    GLint loc = glGetUniformLocation(programID, name);
-    glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(m));
+    GLint uniformLocation = glGetUniformLocation(programID, name);
+    glUniformMatrix4fv(uniformLocation, 1, GL_FALSE, glm::value_ptr(mutex));
 }
 
 inline void ShaderLoader::setVec2(const char* name, const glm::vec2& v) const
 {
-    GLint loc = glGetUniformLocation(programID, name);
-    glUniform2fv(loc, 1, &v.x);
+    GLint uniformLocation = glGetUniformLocation(programID, name);
+    glUniform2fv(uniformLocation, 1, &v.x);
 }
 
 inline void ShaderLoader::setVec3(const char* name, const glm::vec3& v) const
 {
-    GLint loc = glGetUniformLocation(programID, name);
-    glUniform3fv(loc, 1, &v.x);
+    GLint uniformLocation = glGetUniformLocation(programID, name);
+    glUniform3fv(uniformLocation, 1, &v.x);
 }
 
 inline void ShaderLoader::setVec4(const char* name, const glm::vec4& v) const
 {
-    GLint loc = glGetUniformLocation(programID, name);
-    glUniform4fv(loc, 1, &v.x);
+    GLint uniformLocation = glGetUniformLocation(programID, name);
+    glUniform4fv(uniformLocation, 1, &v.x);
 }
 
 inline void ShaderLoader::setFloat(const char* name, float v) const
 {
-    GLint loc = glGetUniformLocation(programID, name);
-    glUniform1f(loc, v);
+    GLint uniformLocation = glGetUniformLocation(programID, name);
+    glUniform1f(uniformLocation, v);
 }

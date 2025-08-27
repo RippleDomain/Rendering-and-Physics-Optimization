@@ -1,7 +1,5 @@
 #pragma once
 
-#include <glm.hpp>
-
 #define PHYSICS 1
 
 //--TUNABLES--

@@ -1,3 +1,7 @@
+/*
+    Box header: wireframe cage draw + resolveCollision signature.
+*/
+
 #pragma once
 
 #include <glad/glad.h>
@@ -5,10 +9,11 @@
 
 class Sphere;
 
+//Axis-aligned bounding box used both for rendering and wall collisions.
 class Box
 {
 public:
-    Box(const glm::vec3& bmin, const glm::vec3& bmax);
+    Box(const glm::vec3& bMin, const glm::vec3& bMax);
     ~Box();
 
     Box(const Box&) = delete;
@@ -16,8 +21,8 @@ public:
     Box(Box&&) noexcept;
     Box& operator=(Box&&) noexcept;
 
-    void draw() const;
-    void resolveCollision(Sphere& s, float restitution) const;
+    void draw() const; //Draw wireframe box.
+    void resolveCollision(Sphere& s, float restitution) const; //Clamp position and invert velocity.
 
 private:
     GLuint vertexArray{ 0 }, vertexBuffer{ 0 }, elementBuffer{ 0 };

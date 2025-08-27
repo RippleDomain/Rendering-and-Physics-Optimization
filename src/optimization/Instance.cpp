@@ -1,3 +1,7 @@
+/*
+    Instancing implementation: unit sphere mesh, instance buffer updates, and draw.
+*/
+
 #include "Instance.h"
 #include "../scene/Sphere.h"
 
@@ -16,7 +20,7 @@ namespace
     {
         glm::vec3 pos;          //12
         std::uint16_t scale;    //2 (half)
-        std::uint8_t  color[4]; //4 (UNORM8 RGBA, A=255)
+        std::uint8_t color[4];  //4 (UNORM8 RGBA, A=255)
         std::uint16_t angle;    //2 (half)
         std::uint16_t pad = 0;  //2
     };
@@ -26,7 +30,7 @@ namespace
 Instance::Instance(unsigned XSegments, unsigned YSegments, int maxInstances)
 {
     capacity = maxInstances;
-    buildMesh(XSegments, YSegments);
+    buildMesh(XSegments, YSegments); //Generate the shared unit sphere mesh once.
 
     glGenBuffers(1, &instanceVertexBuffer);
 
@@ -35,9 +39,9 @@ Instance::Instance(unsigned XSegments, unsigned YSegments, int maxInstances)
 
     glBufferData(GL_ARRAY_BUFFER,
         static_cast<GLsizeiptr>(capacity) * static_cast<GLsizeiptr>(sizeof(InstanceDataPacked)),
-        nullptr, GL_STREAM_DRAW);
+        nullptr, GL_STREAM_DRAW); //Ring/stream buffer for per-frame instance uploads.
 
-    setupInstanceAttribs();
+    setupInstanceAttribs(); //Enable per-instance attributes (divisors).
     glBindVertexArray(0);
 }
 
@@ -49,11 +53,13 @@ Instance::~Instance()
     if (vertexArray)  glDeleteVertexArrays(1, &vertexArray);
 }
 
+//--SPHERE-MESH-GENERATION--
 void Instance::buildMesh(unsigned XSegments, unsigned YSegments)
 {
-    struct VtxPN {
-        float px, py, pz;
-        std::uint32_t n;
+    struct VtxPN 
+    {
+        float px, py, pz;         //Position.
+        std::uint32_t n;          //Packed normal (snorm 10:10:10 + 2).
     };
 
     std::vector<VtxPN> vertices;
@@ -68,15 +74,15 @@ void Instance::buildMesh(unsigned XSegments, unsigned YSegments)
         {
             float xs = float(x) / float(XSegments);
             float ys = float(y) / float(YSegments);
-            float phi = xs * 6.2831853071795864769f;
-            float theta = ys * 3.14159265358979323846f;
+            float phi = xs * 6.2831853071795864769f;    //Azimuth.
+            float theta = ys * 3.14159265358979323846f; //Polar.
 
             float px = std::cos(phi) * std::sin(theta);
             float py = std::cos(theta);
             float pz = std::sin(phi) * std::sin(theta);
 
             glm::vec4 n(px, py, pz, 0.0f);
-            std::uint32_t nPacked = glm::packSnorm3x10_1x2(n);
+            std::uint32_t nPacked = glm::packSnorm3x10_1x2(n); //Pack normal for compact VBO.
 
             vertices.push_back({ px, py, pz, nPacked });
         }
@@ -95,6 +101,7 @@ void Instance::buildMesh(unsigned XSegments, unsigned YSegments)
             indices.push_back(i0); indices.push_back(i2); indices.push_back(i3);
         }
     }
+
     indexCount = static_cast<GLsizei>(indices.size());
 
     glGenVertexArrays(1, &vertexArray);
@@ -109,14 +116,15 @@ void Instance::buildMesh(unsigned XSegments, unsigned YSegments)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBuffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(std::uint16_t), indices.data(), GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VtxPN), (void*)offsetof(VtxPN, px));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VtxPN), (void*)offsetof(VtxPN, px)); //Position
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 4, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(VtxPN), (void*)offsetof(VtxPN, n));
+    glVertexAttribPointer(1, 4, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(VtxPN), (void*)offsetof(VtxPN, n)); //Normal
     glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);
 }
+//--SPHERE-MESH-GENERATION-END--
 
 void Instance::setupInstanceAttribs()
 {
@@ -126,40 +134,41 @@ void Instance::setupInstanceAttribs()
     const GLsizei stride = static_cast<GLsizei>(sizeof(InstanceDataPacked));
 
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(InstanceDataPacked, pos));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(InstanceDataPacked, pos));   //Instance position
     glVertexAttribDivisor(2, 1);
 
     glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 1, GL_HALF_FLOAT, GL_FALSE, stride, (void*)offsetof(InstanceDataPacked, scale));
+    glVertexAttribPointer(3, 1, GL_HALF_FLOAT, GL_FALSE, stride, (void*)offsetof(InstanceDataPacked, scale)); //Instance scale
     glVertexAttribDivisor(3, 1);
 
     glEnableVertexAttribArray(4);
-    glVertexAttribPointer(4, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, (void*)offsetof(InstanceDataPacked, color));
+    glVertexAttribPointer(4, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, (void*)offsetof(InstanceDataPacked, color)); //Instance color
     glVertexAttribDivisor(4, 1);
 
     glEnableVertexAttribArray(5);
-    glVertexAttribPointer(5, 1, GL_HALF_FLOAT, GL_FALSE, stride, (void*)offsetof(InstanceDataPacked, angle));
+    glVertexAttribPointer(5, 1, GL_HALF_FLOAT, GL_FALSE, stride, (void*)offsetof(InstanceDataPacked, angle)); //Instance angle (unused)
     glVertexAttribDivisor(5, 1);
 
     glBindVertexArray(0);
 }
 
+//--INSTANCE-BUFFER-UPDATE--
 void Instance::updateInstances(const std::vector<Sphere>& spheres, int count, float timeSeconds)
 {
     const GLsizeiptr byteSize = static_cast<GLsizeiptr>(count) * static_cast<GLsizeiptr>(sizeof(InstanceDataPacked));
     glBindBuffer(GL_ARRAY_BUFFER, instanceVertexBuffer);
-    glBufferData(GL_ARRAY_BUFFER, byteSize, nullptr, GL_STREAM_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, byteSize, nullptr, GL_STREAM_DRAW); //Resize/refresh stream storage.
 
     auto* dst = static_cast<InstanceDataPacked*>(
         glMapBufferRange(GL_ARRAY_BUFFER, 0, byteSize,
-            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT));
+            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT)); //Avoid stalls, driver allocates fresh memory.
 
     if (dst)
     {
         for (int i = 0; i < count; ++i)
         {
             const glm::vec3 p = spheres[i].getPosition();
-            const float     s = spheres[i].getScale();
+            const float s = spheres[i].getScale();
             const glm::vec3 c = spheres[i].getColor();
 
             dst[i].pos = p;
@@ -177,6 +186,7 @@ void Instance::updateInstances(const std::vector<Sphere>& spheres, int count, fl
     }
     else
     {
+        //Fallback path if mapping is unavailable (rare).
         std::vector<InstanceDataPacked> scratch(static_cast<size_t>(count));
 
         for (int i = 0; i < count; ++i)
@@ -247,10 +257,11 @@ void Instance::updateInstancesFiltered(const std::vector<Sphere>& spheres, const
         glBufferSubData(GL_ARRAY_BUFFER, 0, byteSize, scratch.data());
     }
 }
+//--INSTANCE-BUFFER-UPDATE-END--
 
 void Instance::draw(GLsizei count) const
 {
     glBindVertexArray(vertexArray);
-    glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, 0, count);
+    glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_SHORT, 0, count); //One draw, many instances.
     glBindVertexArray(0);
 }

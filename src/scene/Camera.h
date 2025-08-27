@@ -1,14 +1,19 @@
+/*
+    Camera header: parameters, getters, and view matrix.
+*/
+
 #pragma once
 
 #include <glm.hpp>
 #include <GLFW/glfw3.h>
 
-class Camera 
+//Simple fly camera controlled by LMB + WASD + Space/CTRL.
+class Camera
 {
 public:
     Camera(const glm::vec3& position, float yawDegree, float pitchDegree);
 
-    void update(GLFWwindow* window, float dt);
+    void update(GLFWwindow* window, float dt); //Handle input/mouse deltas.
 
     glm::mat4 viewMatrix() const;
 
@@ -16,11 +21,11 @@ public:
     void  setFOV(float f) { fov = f; }
 
     const glm::vec3& getPosition() const { return position; }
-    float getYaw()   const { return yaw; }
+    float getYaw() const { return yaw; }
     float getPitch() const { return pitch; }
 
 private:
-    void updateVectors();
+    void updateVectors(); //Recompute front/right/up from yaw/pitch.
 
     glm::vec3 position;
     glm::vec3 front{ 0.f, 0.f, -1.f };
@@ -28,7 +33,7 @@ private:
     glm::vec3 up{ 0.f, 1.f,  0.f };
     glm::vec3 worldUp{ 0.f, 1.f, 0.f };
 
-    float yaw;  
+    float yaw;
     float pitch;
 
     float moveSpeed = 3.0f;
@@ -37,5 +42,5 @@ private:
     float fov = 60.f;
 
     float mouseLastX = 0.f, mouseLastY = 0.f;
-    bool  firstMouse = true;
+    bool firstMouse = true;
 };

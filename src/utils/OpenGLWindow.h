@@ -1,3 +1,7 @@
+/*
+    GLFW window/context wrapper: creates window, loads GL via GLAD, sets vsync + viewport.
+*/
+
 #pragma once
 
 #ifndef GLFW_INCLUDE_NONE
@@ -10,13 +14,13 @@
 #include <string>
 #include <cstdio>
 
-/*Wrapper for a GLFW window + OpenGL context.
+/*Wrapper for a GLFW window and OpenGL context.
 Creates GLFW, the window, makes the context current, loads GL (via GLAD).
 Sets vsync, and installs a framebuffer resize callback (glViewport).*/
 class OpenGLWindow
 {
 public:
-    //glMajor/glMinor choose the context version. Set vsync to true to enable it.
+    //glMajor/glMinor choose the context version. Set vsync to false to disable it.
     OpenGLWindow(int width, int height, const char* title, int glMajor = 3, int glMinor = 3, bool vsync = true);
     ~OpenGLWindow();
 
@@ -39,10 +43,10 @@ public:
     GLFWwindow* handle() const { return window; }
 
 private:
-    static void errorCallback(int code, const char* desc);
-    static void framebufferSizeCallback(GLFWwindow* win, int w, int h);
+    static void errorCallback(int code, const char* description);
+    static void framebufferSizeCallback(GLFWwindow* window, int w, int h);
 
-    void createWindow(int width, int height, const char* title, int glMajor, int glMinor, bool vsync);
+    void createWindow(int width, int height, const char* title, int glMajor, int glMinor, bool vSync);
 
     GLFWwindow* window{ nullptr };
     bool initializedGLFW{ false };
@@ -56,17 +60,17 @@ static inline void setGLContextHints(int major, int minor)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 }
 
-inline void OpenGLWindow::errorCallback(int code, const char* desc)
+inline void OpenGLWindow::errorCallback(int code, const char* description)
 {
-    std::fprintf(stderr, "[GLFW %d] %s\n", code, desc ? desc : "");
+    std::fprintf(stderr, "[GLFW %d] %s\n", code, description ? description : ""); //Basic stderr logging.
 }
 
 inline void OpenGLWindow::framebufferSizeCallback(GLFWwindow*, int w, int h)
 {
-    glViewport(0, 0, w, h);
+    glViewport(0, 0, w, h); //Keep viewport in sync with framebuffer size.
 }
 
-inline OpenGLWindow::OpenGLWindow(int width, int height, const char* title, int glMajor, int glMinor, bool vsync)
+inline OpenGLWindow::OpenGLWindow(int width, int height, const char* title, int glMajor, int glMinor, bool vSync)
 {
     glfwSetErrorCallback(&OpenGLWindow::errorCallback);
 
@@ -76,11 +80,12 @@ inline OpenGLWindow::OpenGLWindow(int width, int height, const char* title, int 
 
     initializedGLFW = true;
 
-    createWindow(width, height, title, glMajor, glMinor, vsync);
+    createWindow(width, height, title, glMajor, glMinor, vSync);
 }
 
-inline void OpenGLWindow::createWindow(int width, int height, const char* title, int glMajor, int glMinor, bool vsync)
+inline void OpenGLWindow::createWindow(int width, int height, const char* title, int glMajor, int glMinor, bool vSync)
 {
+    //--WINDOW-CREATE--
     setGLContextHints(glMajor, glMinor);
 
     window = glfwCreateWindow(width, height, title, nullptr, nullptr);
@@ -91,13 +96,17 @@ inline void OpenGLWindow::createWindow(int width, int height, const char* title,
     }
 
     glfwMakeContextCurrent(window);
+    //--WINDOW-CREATE-END--
 
+    //--GL-LOAD--
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         throw std::runtime_error("Failed to initialize GLAD.");
     }
+    //--GL-LOAD-END--
 
-    vSync = vsync;
+    //--VSYNC+CALLBACKS--
+    this->vSync = vSync;
     glfwSwapInterval(vSync ? 1 : 0);
 
     glfwSetFramebufferSizeCallback(window, &OpenGLWindow::framebufferSizeCallback);
@@ -105,6 +114,7 @@ inline void OpenGLWindow::createWindow(int width, int height, const char* title,
     int fbw = 0, fbh = 0;
     glfwGetFramebufferSize(window, &fbw, &fbh);
     glViewport(0, 0, fbw, fbh);
+    //--VSYNC+CALLBACKS-END--
 }
 
 inline OpenGLWindow::~OpenGLWindow()
@@ -123,9 +133,9 @@ inline OpenGLWindow::~OpenGLWindow()
 
 inline OpenGLWindow::OpenGLWindow(OpenGLWindow&& other) noexcept
 {
-    window = other.window;         
+    window = other.window;
     other.window = nullptr;
-    initializedGLFW = other.initializedGLFW; 
+    initializedGLFW = other.initializedGLFW;
     other.initializedGLFW = false;
     vSync = other.vSync;
 }

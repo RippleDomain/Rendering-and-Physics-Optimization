@@ -1,3 +1,7 @@
+/*
+    Camera implementation: LMB + WASD controls and view basis updates.
+*/
+
 #include "Camera.h"
 
 #include <gtc/matrix_transform.hpp>
@@ -5,7 +9,7 @@
 
 Camera::Camera(const glm::vec3& position, float yawDegree, float pitchDegree) : position(position), yaw(yawDegree), pitch(pitchDegree)
 {
-    updateVectors();
+    updateVectors(); //Initialize basis vectors.
 }
 
 void Camera::update(GLFWwindow* window, float dt)
@@ -14,7 +18,7 @@ void Camera::update(GLFWwindow* window, float dt)
 
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) != GLFW_PRESS)
     {
-        firstMouse = true;
+        firstMouse = true; //Reset deltas when not dragging.
 
         return;
     }
@@ -38,10 +42,11 @@ void Camera::update(GLFWwindow* window, float dt)
     yOffset *= sensitivity;
 
     yaw += xOffset;
-    pitch = std::clamp(pitch + yOffset, -89.0f, 89.0f);
+    pitch = std::clamp(pitch + yOffset, -89.0f, 89.0f); //Clamp pitch to avoid gimbal lock / flip.
     updateVectors();
 
     float speed = moveSpeed * dt;
+
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) speed *= sprintMultiplier;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) position += front * speed;
@@ -55,7 +60,7 @@ void Camera::update(GLFWwindow* window, float dt)
 
 glm::mat4 Camera::viewMatrix() const
 {
-    return glm::lookAt(position, position + front, up);
+    return glm::lookAt(position, position + front, up); //Standard lookAt view.
 }
 
 void Camera::updateVectors()

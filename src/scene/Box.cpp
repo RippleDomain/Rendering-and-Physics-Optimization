@@ -1,3 +1,7 @@
+/*
+    Box implementation: cage buffers and wall collision response.
+*/
+
 #include "Box.h"
 #include "Sphere.h"
 
@@ -82,7 +86,7 @@ Box& Box::operator=(Box&& o) noexcept
 void Box::draw() const
 {
     glBindVertexArray(vertexArray);
-    glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, 0); //Simple wireframe outline.
     glBindVertexArray(0);
 }
 
@@ -95,16 +99,16 @@ void Box::resolveCollision(Sphere& s, float restitution) const
 
     for (int k = 0; k < 3; ++k)
     {
-        float lo = (&min.x)[k] + r;
+        float lo = (&min.x)[k] + r; //Compute allowed range per axis.
         float hi = (&max.x)[k] - r;
 
         float* pp = (&p.x) + k;
         float* vp = (&v.x) + k;
 
-        if (*pp < lo) { *pp = lo; *vp = -*vp * restitution; }
+        if (*pp < lo) { *pp = lo; *vp = -*vp * restitution; } //Bounce with restitution on hit.
         if (*pp > hi) { *pp = hi; *vp = -*vp * restitution; }
     }
 
     s.setPosition(p);
-    s.setVelocity(v * 1.0012f); //1.0012f multiplier in order to move the spheres around more.
+    s.setVelocity(v);
 }

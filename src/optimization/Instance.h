@@ -1,3 +1,7 @@
+/*
+    Instancing header: interface for uploading/drawing many spheres efficiently.
+*/
+
 #pragma once
 
 #include <glad/glad.h>
@@ -6,6 +10,7 @@
 
 class Sphere;
 
+//Simple helper that owns a unit-sphere mesh and a per-instance buffer, and draws instanced spheres.
 class Instance
 {
 public:
@@ -15,13 +20,13 @@ public:
     Instance(const Instance&) = delete;
     Instance& operator=(const Instance&) = delete;
 
-    void updateInstances(const std::vector<Sphere>& spheres, int count, float timeSeconds);
-    void updateInstancesFiltered(const std::vector<Sphere>& spheres, const std::vector<int>& visible, int count, float timeSeconds);
-    void draw(GLsizei count) const;
+    void updateInstances(const std::vector<Sphere>& spheres, int count, float timeSeconds); //Upload all in order.
+    void updateInstancesFiltered(const std::vector<Sphere>& spheres, const std::vector<int>& visible, int count, float timeSeconds); //Upload visible subset.
+    void draw(GLsizei count) const; //Instanced draw call.
 
 private:
-    void buildMesh(unsigned XSegments, unsigned YSegments);
-    void setupInstanceAttribs();
+    void buildMesh(unsigned XSegments, unsigned YSegments); //Build UV-sphere vertex/index buffers.
+    void setupInstanceAttribs(); //Enable per-instance attributes.
 
     GLuint vertexArray{ 0 };
     GLuint vertexBuffer{ 0 };
